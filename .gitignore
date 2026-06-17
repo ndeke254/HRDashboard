@@ -1,4 +1,5 @@
 .DS_Store
 dev.R
-inst/app/
 .Rprofile
+data/
+.Renviron

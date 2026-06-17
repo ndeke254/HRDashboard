@@ -1,0 +1,230 @@
+// password input show/hide toggle
+.password-input-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+
+  .form-control {
+    padding-right: 40px;
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 60%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    z-index: 5;
+    color: $gray;
+
+    &:hover {
+      color: $grayDark;
+    }
+  }
+}
+
+// notiflix notify font override
+[id^="NotiflixNotifyWrap"]>div {
+  font-family: $fontPrimary !important;
+}
+
+// loading spinner in buttons
+.spinner-border {
+  margin-right: 10px;
+  border-width: 2px;
+}
+
+.busy-text {
+  font-size: rem(16px);
+  color: $navy;
+  font-weight: 700;
+  font-family: $fontPrimary;
+
+  @media (max-width: 576px) {
+    display: none;
+  }
+}
+
+// auth page — teal/navy gradient backdrop
+.auth-page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: $bgAuth;
+  background-image:
+    radial-gradient(ellipse at 65% 10%, rgba($primary, 0.18) 0%, transparent 52%),
+    radial-gradient(ellipse at 20% 90%, rgba($navy, 0.12) 0%, transparent 45%),
+    radial-gradient(circle, rgba($primary, 0.10) 1px, transparent 1px);
+  background-size: auto, auto, 24px 24px;
+  overflow-y: auto;
+  padding: rem(24px) rem(16px);
+  z-index: 1000;
+
+  .tabbable,
+  .tab-content,
+  .tab-pane {
+    width: 100%;
+  }
+}
+
+// brand block above the card
+.auth-brand {
+  animation: fadeSlideUp 0.4s ease both;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: rem(28px);
+
+  .auth-brand-logo {
+    height: rem(38px);
+    width: auto;
+    margin-bottom: rem(10px);
+  }
+
+  .auth-brand-name {
+    color: $navy;
+    font-size: rem(12px);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0;
+  }
+}
+
+// auth card shell
+.auth-card {
+  animation: fadeSlideUp 0.45s 0.08s ease both;
+  background: $white;
+  border-radius: $filletLarge;
+  box-shadow: 0 8px 32px rgba($navy, 0.14), 0 2px 8px rgba($navy, 0.07);
+  overflow: hidden;
+  width: 100%;
+  max-width: 420px;
+
+  // orange accent stripe — kept as a minor touch
+  &::before {
+    content: "";
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg, $navy 0%, $primary 60%, mix($primary, $orange, 70%) 100%);
+  }
+}
+
+// card header
+.auth-card-header {
+  padding: rem(28px) rem(28px) rem(8px);
+
+  .auth-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: rem(48px);
+    height: rem(48px);
+    border-radius: 50%;
+    background-color: mix($primary, $white, 12%);
+    color: $primary;
+    font-size: rem(20px);
+    margin-bottom: rem(16px);
+  }
+
+  .card-title {
+    color: $navy;
+    font-size: rem(19px);
+    font-weight: 700;
+    margin-bottom: rem(6px);
+  }
+
+  p {
+    color: $gray;
+    font-size: rem(13px);
+    margin-bottom: 0;
+  }
+}
+
+// card body
+.auth-card .card-body {
+  padding: rem(20px) rem(28px) rem(16px);
+}
+
+// card footer
+.auth-card-footer {
+  border-top: 1px solid $ashLight;
+  padding: rem(14px) rem(28px) rem(20px);
+
+  a,
+  .action-button {
+    color: $navy;
+    font-weight: 500;
+    font-size: rem(13px);
+    text-decoration: none;
+
+    &:hover {
+      color: $orange;
+      text-decoration: underline;
+    }
+  }
+
+  p {
+    margin-bottom: 0;
+  }
+}
+
+// primary action button — navy/teal dominant
+.btn-auth {
+  background-color: $navy;
+  border: none;
+  border-radius: $filletSmall;
+  color: $white;
+  font-family: $fontPrimary;
+  font-weight: 600;
+  font-size: rem(15px);
+  letter-spacing: 0.02em;
+  padding: rem(11px) rem(20px);
+  transition: background-color $hoverTransition, box-shadow $hoverTransition;
+  width: 100%;
+
+  &:hover,
+  &:focus {
+    background-color: $primary;
+    box-shadow: 0 2px 5px transparentize($navy, 0.6);
+    color: $white;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+  }
+}
+
+// info alert inside cards
+.auth-alert {
+  background-color: mix($primary, $white, 10%);
+  border-left: 3px solid $primary;
+  border-radius: $filletSmall;
+  color: $navy;
+  font-size: rem(14px);
+  padding: rem(12px) rem(14px);
+}
+
+// form control focus ring
+.auth-card .form-control:focus {
+  border-color: $primary;
+  box-shadow: 0 0 0 2px transparentize($primary, 0.8);
+  outline: none;
+  transition: border-color $hoverTransition, box-shadow $hoverTransition;
+}
+
+// form label
+.auth-card .form-label {
+  font-size: rem(13px);
+  font-weight: 500;
+  color: $grayDark;
+  margin-bottom: rem(5px);
+}

@@ -1,0 +1,62 @@
+.chart-time {
+
+  .chart-time-container {
+    padding: rem(46px) rem(10px) rem(10px);
+  }
+
+  .dygraph-label {
+    font-size: rem(10px);
+  }
+
+  .dygraph-legend {
+    // overwrite dygraph inline styles
+    background-color: transparent !important;
+    top: rem(-30px) !important;
+    left: rem(10px) !important;
+    width: 100% !important;
+
+    >span {
+      margin-left: rem(5px);
+      margin-right: rem(10px);
+      display: inline-block;
+    }
+  }
+}
+
+.chart-breakdown {
+
+  .chart-breakdown-container {
+    padding: rem(40px) rem(10px) rem(10px);
+  }
+}
+
+.reactable-subtitle {
+  font-size: rem(14px);
+  color: $grayLight;
+  font-weight: 400;
+}
+
+// live attendance badge
+.live-badge {
+  align-items: center;
+  background-color: #FEE2E2;
+  border-radius: $filletSmall;
+  color: #991B1B;
+  display: inline-flex;
+  font-size: rem(11px);
+  font-weight: 600;
+  gap: rem(5px);
+  letter-spacing: 0.04em;
+  padding: rem(3px) rem(8px);
+  text-transform: uppercase;
+
+  .live-dot {
+    animation: pulseDot 1.4s ease-in-out infinite;
+    background-color: currentColor;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    height: rem(7px);
+    width: rem(7px);
+  }
+}

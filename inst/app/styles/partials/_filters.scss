@@ -1,0 +1,602 @@
+.filter-container {
+  background: $bgPage;
+  border: 1px solid $ashLight;
+  border-radius: $filletSmall;
+  display: flex;
+  flex-direction: column;
+  gap: rem(14px);
+  margin-bottom: rem(20px);
+  padding: rem(18px) rem(16px) rem(16px);
+  position: relative;
+  width: 100%;
+  z-index: 20 !important;
+}
+
+.filter-panel-label {
+  color: $grayLight;
+  font-size: rem(11px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.selectize-filters {
+  display: grid;
+  gap: rem(14px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+
+  .form-group {
+    @include dropdown;
+    @include dropdownFilters;
+    display: flex;
+    flex-direction: column;
+    gap: rem(6px);
+    width: 100%;
+
+    label {
+      color: $grayDark;
+      font-size: rem(12px);
+      font-weight: 500;
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    &>div {
+      width: 100%;
+    }
+  }
+}
+
+.timeframe-row {
+  display: grid;
+  gap: rem(10px);
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+
+  @include mediaTo($breakMd) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.timeframe-controls {
+  display: grid;
+  gap: rem(10px) rem(12px);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.timeframe-controls .filter-mode-toggle {
+  grid-column: 1 / 2;
+}
+
+.timeframe-controls #period_filters_wrapper,
+.timeframe-controls #date_range_wrapper {
+  grid-column: 2 / 3;
+  width: 100%;
+}
+
+.filter-mode-toggle {
+  display: inline-flex;
+
+  .filter-toggle-btn {
+    background: transparent;
+    border: 1px solid $orange;
+    border-radius: 0;
+    box-shadow: none;
+    color: $orange;
+    font-size: rem(12px);
+    font-weight: 500;
+    line-height: 1.4;
+    padding: rem(4px) rem(14px);
+    transition: background 0.15s, color 0.15s;
+
+    &:first-child {
+      border-radius: rem(20px) 0 0 rem(20px);
+    }
+
+    &:last-child {
+      border-radius: 0 rem(20px) rem(20px) 0;
+    }
+
+    &:hover:not(.active) {
+      background: transparentize($orange, 0.92);
+    }
+
+    &.active {
+      background: $orange;
+      color: $white;
+    }
+
+    &:focus,
+    &:active,
+    &:focus-visible {
+      box-shadow: none;
+      outline: none;
+    }
+  }
+}
+
+.shiny-date-range-input {
+
+  .input-daterange {
+    align-items: center;
+    display: flex;
+    gap: rem(8px);
+
+    .input-group-addon {
+      background: transparent;
+      border: none;
+      color: $grayLight;
+      font-size: rem(12px);
+      font-family: $fontPrimary;
+      padding: 0 rem(2px);
+      margin-right: 0;
+    }
+
+    input.form-control {
+      background-color: $bgPage;
+      border: 1px solid #dee2e6;
+      border-radius: $filletSmall;
+      font-family: $fontPrimary;
+      font-size: rem(13px);
+      font-weight: 500;
+      height: 38px;
+      padding: rem(6px) rem(10px);
+      transition: border-color 0.15s;
+
+      &:hover {
+        border-color: $orange;
+      }
+
+      &:focus {
+        border-color: $orange;
+        box-shadow: 0 0 0 1px transparentize($orange, 0.82);
+        outline: none;
+      }
+    }
+  }
+}
+
+// Bootstrap datepicker calendar — full theme override
+.datepicker {
+  background: $white;
+  border: 1px solid $ashLight;
+  border-radius: $filletLarge;
+  box-shadow: $boxShadowSmall;
+  font-family: $fontPrimary;
+  padding: rem(10px);
+  z-index: 9999;
+
+  // ── navigation header (prev / month-year switch / next) ──────────────────
+  thead tr:first-child {
+    th {
+      border-radius: $filletSmall;
+      font-size: rem(13px);
+      font-weight: 600;
+      padding: rem(6px) rem(4px);
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .datepicker-switch {
+      color: $navy;
+
+      &:hover {
+        background: transparentize($orange, 0.9);
+        color: $orange;
+      }
+    }
+
+    .prev,
+    .next {
+      color: $grayLight;
+      font-size: rem(14px);
+
+      &:hover {
+        background: transparentize($orange, 0.9);
+        color: $orange;
+      }
+    }
+  }
+
+  // ── day-of-week labels ────────────────────────────────────────────────────
+  .dow {
+    color: $grayLight;
+    font-size: rem(10px);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: rem(4px) 0;
+    text-transform: uppercase;
+  }
+
+  // ── day cells ─────────────────────────────────────────────────────────────
+  td.day {
+    border-radius: $filletSmall;
+    color: $grayDark;
+    font-size: rem(13px);
+    font-weight: 400;
+    padding: rem(5px) rem(6px);
+    transition: background 0.12s, color 0.12s;
+
+    &:hover {
+      background: transparentize($orange, 0.88);
+      color: $orange;
+    }
+
+    // days outside current month
+    &.old,
+    &.new {
+      color: $ash;
+    }
+
+    // today — subtle orange ring
+    &.today:not(.active) {
+      background: transparentize($orange, 0.88);
+      color: $orange;
+      font-weight: 600;
+      position: relative;
+    }
+
+    // selected start / end
+    &.active,
+    &.active:hover,
+    &.range-start,
+    &.range-end {
+      background: $orange !important;
+      border-radius: $filletSmall;
+      color: $white !important;
+      font-weight: 600;
+      text-shadow: none;
+    }
+
+    // in-between range highlight
+    &.range:not(.active):not(.range-start):not(.range-end) {
+      background: transparentize($orange, 0.82);
+      border-radius: 0;
+      color: $grayDark;
+    }
+
+    // disabled
+    &.disabled,
+    &.disabled:hover {
+      background: transparent;
+      color: $ashLight;
+      cursor: not-allowed;
+    }
+  }
+
+  // ── month / year grid cells ───────────────────────────────────────────────
+  td span {
+    border-radius: $filletSmall;
+    color: $grayDark;
+    font-size: rem(13px);
+    font-weight: 400;
+    transition: background 0.12s, color 0.12s;
+
+    &:hover {
+      background: transparentize($orange, 0.88);
+      color: $orange;
+    }
+
+    &.active,
+    &.active:hover {
+      background: $orange;
+      color: $white;
+      font-weight: 600;
+      text-shadow: none;
+    }
+
+    &.old,
+    &.new {
+      color: $ash;
+    }
+
+    &.disabled {
+      color: $ashLight;
+    }
+  }
+
+  // ── "Today" / "Clear" footer buttons ─────────────────────────────────────
+  tfoot tr th {
+    border-radius: $filletSmall;
+    color: $orange;
+    font-family: $fontPrimary;
+    font-size: rem(12px);
+    font-weight: 600;
+    padding: rem(4px);
+    transition: background 0.12s;
+
+    &:hover {
+      background: transparentize($orange, 0.9);
+    }
+  }
+}
+
+.dashboard-filters {
+  animation: fadeSlideUp 0.22s ease both;
+  display: grid;
+  gap: rem(15px);
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  align-items: end;
+  width: 100%;
+
+  @include mediaFrom($breakLg) {
+    gap: rem(30px);
+  }
+
+  .form-group {
+    @include dropdown;
+    @include dropdownFilters;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 150px;
+
+    &:nth-child(1),
+    &.year-filter {
+      grid-column: 1 / 2;
+    }
+
+    &:nth-child(2),
+    &.month-filter {
+      grid-column: 2 / 3;
+    }
+
+    &:nth-child(3),
+    &.week-filter {
+      grid-column: 3 / 4;
+    }
+
+    &:nth-child(4),
+    &.day-filter {
+      grid-column: 4 / 5;
+    }
+
+    &:nth-child(5),
+    &.compare-filter {
+      grid-column: 5 / 6;
+    }
+
+    @include mediaFrom($breakLg) {
+      align-items: stretch;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    label {
+      color: $grayDark;
+      font-weight: 500;
+      margin-bottom: rem(5px);
+      white-space: nowrap;
+    }
+
+    &>div {
+      width: 100%;
+    }
+  }
+
+  @include mediaTo($breakMd) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    .form-group:nth-child(1),
+    .form-group:nth-child(2),
+    .form-group:nth-child(3),
+    .form-group:nth-child(4),
+    .form-group:nth-child(5) {
+      grid-column: auto;
+    }
+
+    .btn-apply-filters {
+      justify-self: start;
+    }
+  }
+
+  @include mediaTo($breakXs) {
+    grid-template-columns: 1fr;
+
+    .form-group,
+    .btn-apply-filters {
+      grid-column: auto;
+      width: 100%;
+    }
+
+    .btn-apply-filters {
+      justify-self: stretch;
+    }
+  }
+}
+
+.selectize-filters {
+  display: grid;
+  gap: rem(14px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  min-width: 0;
+
+  @include mediaFrom($breakSm) {
+    gap: rem(16px);
+  }
+
+  @include mediaFrom($breakLg) {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  }
+
+  .form-group {
+    @include dropdown;
+    @include dropdownFilters;
+    display: flex;
+    flex-direction: column;
+    gap: rem(6px);
+    width: 100%;
+
+    label {
+      color: $grayDark;
+      font-weight: 500;
+      margin-bottom: 0;
+      white-space: nowrap;
+      font-size: rem(12px);
+    }
+
+    &>div {
+      flex: 1;
+      width: 100%;
+    }
+  }
+}
+
+.filter-container .selectize-filters {
+  flex: 1 1 0;
+}
+
+.selectize-control.multi .selectize-input {
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 6px 8px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $bgPage;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $ash;
+    border-radius: 3px;
+
+    &:hover {
+      background: $grayLight;
+    }
+  }
+}
+
+// date range row — input + apply button side by side
+.date-range-filter-row {
+  animation: fadeSlideUp 0.22s ease both;
+  align-items: end;
+  display: grid;
+  gap: rem(12px);
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: 100%;
+
+  .shiny-date-range-input {
+    min-width: 0;
+  }
+}
+
+// apply filters button — appears on both period and date-range sides
+.btn-apply-filters {
+  background: $navy;
+  border: none;
+  border-radius: $filletSmall;
+  color: $white;
+  font-family: $fontPrimary;
+  font-size: rem(13px);
+  font-weight: 600;
+  height: 38px;
+  padding: rem(6px) rem(16px);
+  transition: background $hoverTransition, box-shadow $hoverTransition;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus {
+    background: darken($navy, 8%);
+    box-shadow: 0 4px 12px rgba($navy, 0.30);
+    color: $white;
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+// inside period filter row — pin the button to flex-end alignment
+.dashboard-filters .btn-apply-filters {
+  align-self: normal;
+  flex: 0 0 auto;
+}
+
+.date-range-filter-row .btn-apply-filters {
+  align-self: end;
+}
+
+// row that holds both the period chip and the compare chip
+.filter-applied-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: rem(8px);
+  padding-top: rem(2px);
+}
+
+// individual chip — period label or comparison label
+.compare-info {
+  align-items: center;
+  background: mix($navy, $white, 8%);
+  border-radius: rem(20px);
+  color: $navy;
+  display: inline-flex;
+  font-size: rem(11px);
+  font-weight: 600;
+  gap: rem(5px);
+  letter-spacing: 0.03em;
+  padding: rem(3px) rem(10px);
+  width: fit-content;
+}
+
+.filter-container {
+
+  .selectize-control.single .selectize-input,
+  .selectize-control.multi .selectize-input,
+  .shiny-date-range-input .input-daterange input.form-control,
+  .dashboard-filters .form-control,
+  .dashboard-filters .selectize-input {
+    background: $bgPage;
+    border-color: #dee2e6;
+    color: $grayDark;
+    box-shadow: none;
+  }
+
+  .selectize-control.single .selectize-input::placeholder,
+  .selectize-control.multi .selectize-input::placeholder,
+  .shiny-date-range-input input::placeholder {
+    color: $grayLight;
+  }
+
+  .selectize-control.single .selectize-input input,
+  .selectize-control.multi .selectize-input input {
+    color: $grayDark;
+  }
+
+  .selectize-control.multi .item {
+    background: $white;
+    border: 1px solid $ashLight;
+    color: $grayDark;
+  }
+
+  .selectize-dropdown {
+    background: $white;
+    border-color: $ashLight;
+    color: $grayDark;
+  }
+
+  .selectize-dropdown .option {
+    color: $grayDark;
+  }
+
+  .selectize-dropdown .active {
+    background: transparentize($orange, 0.88);
+    color: $orange;
+  }
+}
+
+.input-daterange .input-group-addon.input-group-prepend.input-group-append .input-group-text {
+  background-color: #eef3f7;
+}
