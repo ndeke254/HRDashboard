@@ -1,3 +1,6 @@
+#' @import data.table
+NULL
+
 #' @keywords internal
 .generate_synthetic_data <- function(duckdb_path, parquet_root) {
   set.seed(42L)
