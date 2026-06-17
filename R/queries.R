@@ -1,4 +1,4 @@
-#' Data warehouse path
+#' Attendance data warehouse path
 #' @keywords internal
 .p <- function(
   parquet_root = Sys.getenv(
@@ -6,7 +6,18 @@
     unset = system.file("data/warehouse", package = "HRDashboard")
   )
 ) {
-  glue::glue("read_parquet('{parquet_root}/**/*.parquet', hive_partitioning=true)")
+  glue::glue("read_parquet('{parquet_root}/attendance/**/*.parquet', hive_partitioning=true)")
+}
+
+#' Payroll data warehouse path
+#' @keywords internal
+.pp <- function(
+  parquet_root = Sys.getenv(
+    x     = "PARQUET_ROOT",
+    unset = system.file("data/warehouse", package = "HRDashboard")
+  )
+) {
+  glue::glue("read_parquet('{parquet_root}/payroll/**/*.parquet', hive_partitioning=true)")
 }
 
 #' Execution wrapper
@@ -17,9 +28,9 @@
   data.table::setDT(DBI::dbGetQuery(conn = conn, statement = sql))[]
 }
 
-#' Build SQL WHERE clause (date range + optional dept/emp filters)
+#' Build SQL WHERE clause (date range + optional dept/emp/loc filters)
 #' @keywords internal
-.where <- function(date_from = NULL, date_to = NULL, dept_ids = NULL, emp_ids = NULL) {
+.where <- function(date_from = NULL, date_to = NULL, dept_ids = NULL, emp_ids = NULL, loc_ids = NULL) {
   clauses <- character(0)
 
   if (!is.null(date_from) && !is.null(date_to)) {
@@ -43,6 +54,11 @@
       clauses,
       glue::glue("employee_id IN ({paste(as.integer(emp_ids), collapse = ',')})")
     )
+  }
+
+  if (!is.null(loc_ids) && !identical(loc_ids, "all") && length(loc_ids) > 0L) {
+    clauses <- c(clauses,
+      glue::glue("location_id IN ({paste(as.integer(loc_ids), collapse = ',')})"))
   }
 
   if (identical(length(clauses), 0L)) return("")
@@ -74,7 +90,7 @@
 #'
 #' @param by String. \code{"department"} or \code{"employee"}.
 #' @param date_from,date_to Date range.
-#' @param dept_ids,emp_ids Optional filter vectors.
+#' @param dept_ids,emp_ids,loc_ids Optional filter vectors.
 #' @return data.table
 #' @export
 query_attendance_summary <- function(
@@ -82,10 +98,11 @@ query_attendance_summary <- function(
   date_from = NULL,
   date_to   = NULL,
   dept_ids  = NULL,
-  emp_ids   = NULL
+  emp_ids   = NULL,
+  loc_ids   = NULL
 ) {
   gc <- .gc(by)
-  w  <- .where(date_from, date_to, dept_ids, emp_ids)
+  w  <- .where(date_from, date_to, dept_ids, emp_ids, loc_ids)
   .q(glue::glue("
     SELECT {gc},
       ROUND(100.0 * AVG(CAST(is_present AS DOUBLE)), 2)                       AS presence_rate_pct,
@@ -110,10 +127,11 @@ query_payroll_summary <- function(
   date_from = NULL,
   date_to   = NULL,
   dept_ids  = NULL,
-  emp_ids   = NULL
+  emp_ids   = NULL,
+  loc_ids   = NULL
 ) {
   gc <- .gc(by)
-  w  <- .where(date_from, date_to, dept_ids, emp_ids)
+  w  <- .where(date_from, date_to, dept_ids, emp_ids, loc_ids)
   .q(glue::glue("
     SELECT {gc},
       ROUND(SUM(gross_daily_pay), 2)                                         AS total_gross_pay,
@@ -137,10 +155,11 @@ query_kpi_summary <- function(
   date_from = NULL,
   date_to   = NULL,
   dept_ids  = NULL,
-  emp_ids   = NULL
+  emp_ids   = NULL,
+  loc_ids   = NULL
 ) {
   gc <- .gc(by)
-  w  <- .where(date_from, date_to, dept_ids, emp_ids)
+  w  <- .where(date_from, date_to, dept_ids, emp_ids, loc_ids)
   .q(glue::glue("
     WITH base AS (SELECT * FROM {.p()} {w}),
     comp AS (
@@ -202,10 +221,11 @@ query_metric_trend <- function(
   date_to   = NULL,
   dept_ids  = NULL,
   emp_ids   = NULL,
+  loc_ids   = NULL,
   by        = NULL,
   grain     = "week"
 ) {
-  w   <- .where(date_from, date_to, dept_ids, emp_ids)
+  w   <- .where(date_from, date_to, dept_ids, emp_ids, loc_ids)
   pe  <- .grain_expr(grain)
   gc  <- if (!is.null(by)) paste0(.gc(by), ",") else ""
   ogc <- if (!is.null(by)) paste0(.gc(by), ",") else ""
@@ -237,11 +257,11 @@ query_metric_trend <- function(
 #' @export
 query_attendance_trend <- function(
   date_from = NULL, date_to = NULL,
-  dept_ids  = NULL, emp_ids = NULL,
+  dept_ids  = NULL, emp_ids = NULL, loc_ids = NULL,
   by        = NULL,
   grain     = "week"
 ) {
-  query_metric_trend("presence_rate_pct", date_from, date_to, dept_ids, emp_ids, by, grain)
+  query_metric_trend("presence_rate_pct", date_from, date_to, dept_ids, emp_ids, loc_ids, by, grain)
 }
 
 #' Payroll trend (gross pay + overtime per period)
@@ -249,11 +269,11 @@ query_attendance_trend <- function(
 #' @export
 query_payroll_trend <- function(
   date_from = NULL, date_to = NULL,
-  dept_ids  = NULL, emp_ids = NULL,
+  dept_ids  = NULL, emp_ids = NULL, loc_ids = NULL,
   by        = NULL,
   grain     = "week"
 ) {
-  w   <- .where(date_from, date_to, dept_ids, emp_ids)
+  w   <- .where(date_from, date_to, dept_ids, emp_ids, loc_ids)
   pe  <- .grain_expr(grain)
   gc  <- if (!is.null(by)) paste0(.gc(by), ",") else ""
   ogc <- if (!is.null(by)) paste0(.gc(by), ",") else ""
@@ -278,9 +298,10 @@ query_hours_distribution <- function(
   date_from = NULL,
   date_to   = NULL,
   dept_ids  = NULL,
-  emp_ids   = NULL
+  emp_ids   = NULL,
+  loc_ids   = NULL
 ) {
-  w <- .where(date_from, date_to, dept_ids, emp_ids)
+  w <- .where(date_from, date_to, dept_ids, emp_ids, loc_ids)
 
   w_present <- if (nchar(trimws(w)) > 0L) {
     paste(w, "AND is_present AND hours_worked IS NOT NULL")
@@ -315,9 +336,10 @@ query_attendance_status <- function(
   date_from = NULL,
   date_to   = NULL,
   emp_ids   = NULL,
-  dept_ids  = NULL
+  dept_ids  = NULL,
+  loc_ids   = NULL
 ) {
-  w  <- .where(date_from, date_to, dept_ids, emp_ids)
+  w  <- .where(date_from, date_to, dept_ids, emp_ids, loc_ids)
   gc <- if (!is.null(by)) .gc(by) else "employee_id"
 
   today  <- Sys.Date()
@@ -334,5 +356,308 @@ query_attendance_status <- function(
            is_late, is_early_leave, hours_worked
     FROM {.p()} {full_where}
     ORDER BY {gc}, date
+  "))
+}
+
+#' Workforce headcount overview (DuckDB employees + offices)
+#' @param dept_ids Optional department filter.
+#' @param loc_ids Optional location filter.
+#' @export
+query_workforce_overview <- function(dept_ids = NULL, loc_ids = NULL) {
+  dept_filter <- if (!is.null(dept_ids) && !identical(dept_ids, "all") && length(dept_ids) > 0L)
+    glue::glue("AND e.dept_id IN ({paste(as.integer(dept_ids), collapse = ',')})") else ""
+  loc_filter <- if (!is.null(loc_ids) && !identical(loc_ids, "all") && length(loc_ids) > 0L)
+    glue::glue("AND e.location_id IN ({paste(as.integer(loc_ids), collapse = ',')})") else ""
+  today <- Sys.Date()
+  conn <- duckdb_conn()
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  data.table::setDT(DBI::dbGetQuery(conn, glue::glue("
+    SELECT
+      COUNT(*)                                                            AS total_employees,
+      SUM(CAST(e.status = 'active' AS INTEGER))                         AS active_employees,
+      ROUND(SUM(e.fte * CAST(e.status = 'active' AS DOUBLE)), 2)        AS total_fte,
+      SUM(CAST(e.gender = 'F' AND e.status = 'active' AS INTEGER))      AS female_count,
+      SUM(CAST(e.gender = 'M' AND e.status = 'active' AS INTEGER))      AS male_count,
+      ROUND(AVG(CASE WHEN e.status = 'active'
+            THEN DATE_DIFF('year', e.birth_date, DATE '{today}') END), 1) AS avg_age,
+      ROUND(AVG(CASE WHEN e.status = 'active'
+            THEN DATE_DIFF('year', e.hire_date,  DATE '{today}') END), 2) AS avg_tenure_yrs
+    FROM employees e
+    WHERE 1=1 {dept_filter} {loc_filter}
+  ")))[]
+}
+
+#' Gender diversity breakdown
+#' @param by One of "department", "location", "level".
+#' @export
+query_gender_diversity <- function(by = c("department", "location", "level"),
+                                   dept_ids = NULL, loc_ids = NULL) {
+  by <- match.arg(by)
+  dept_filter <- if (!is.null(dept_ids) && !identical(dept_ids, "all") && length(dept_ids) > 0L)
+    glue::glue("AND e.dept_id IN ({paste(as.integer(dept_ids), collapse = ',')})") else ""
+  loc_filter <- if (!is.null(loc_ids) && !identical(loc_ids, "all") && length(loc_ids) > 0L)
+    glue::glue("AND e.location_id IN ({paste(as.integer(loc_ids), collapse = ',')})") else ""
+
+  group_col <- switch(by,
+    department = "d.name",
+    location   = "o.name",
+    level      = "e.job_level"
+  )
+  join_clause <- switch(by,
+    department = "LEFT JOIN departments d ON d.id = e.dept_id",
+    location   = "LEFT JOIN offices o ON o.id = e.location_id",
+    level      = ""
+  )
+
+  conn <- duckdb_conn()
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  data.table::setDT(DBI::dbGetQuery(conn, glue::glue("
+    SELECT {group_col} AS group_label,
+           e.gender,
+           COUNT(*) AS n,
+           ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY {group_col}), 1) AS pct
+    FROM employees e
+    {join_clause}
+    WHERE e.status = 'active' {dept_filter} {loc_filter}
+    GROUP BY {group_col}, e.gender
+    ORDER BY {group_col}, e.gender
+  ")))[]
+}
+
+#' Age distribution (10-year buckets)
+#' @export
+query_age_distribution <- function(dept_ids = NULL, loc_ids = NULL) {
+  dept_filter <- if (!is.null(dept_ids) && !identical(dept_ids, "all") && length(dept_ids) > 0L)
+    glue::glue("AND dept_id IN ({paste(as.integer(dept_ids), collapse = ',')})") else ""
+  loc_filter <- if (!is.null(loc_ids) && !identical(loc_ids, "all") && length(loc_ids) > 0L)
+    glue::glue("AND location_id IN ({paste(as.integer(loc_ids), collapse = ',')})") else ""
+  today <- Sys.Date()
+  conn <- duckdb_conn()
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  data.table::setDT(DBI::dbGetQuery(conn, glue::glue("
+    WITH ages AS (
+      SELECT DATE_DIFF('year', birth_date, DATE '{today}') AS age
+      FROM employees
+      WHERE status = 'active' {dept_filter} {loc_filter}
+    ),
+    bucketed AS (
+      SELECT
+        CASE
+          WHEN age < 25  THEN 'Under 25'
+          WHEN age < 35  THEN '25 - 34'
+          WHEN age < 45  THEN '35 - 44'
+          WHEN age < 55  THEN '45 - 54'
+          ELSE                '55+'
+        END AS age_bucket,
+        CASE
+          WHEN age < 25  THEN 1
+          WHEN age < 35  THEN 2
+          WHEN age < 45  THEN 3
+          WHEN age < 55  THEN 4
+          ELSE                5
+        END AS sort_key
+      FROM ages
+    )
+    SELECT age_bucket, sort_key,
+           COUNT(*) AS n,
+           ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS pct
+    FROM bucketed
+    GROUP BY age_bucket, sort_key
+    ORDER BY sort_key
+  ")))[]
+}
+
+#' Education level distribution
+#' @export
+query_education_distribution <- function(dept_ids = NULL, loc_ids = NULL) {
+  dept_filter <- if (!is.null(dept_ids) && !identical(dept_ids, "all") && length(dept_ids) > 0L)
+    glue::glue("AND dept_id IN ({paste(as.integer(dept_ids), collapse = ',')})") else ""
+  loc_filter <- if (!is.null(loc_ids) && !identical(loc_ids, "all") && length(loc_ids) > 0L)
+    glue::glue("AND location_id IN ({paste(as.integer(loc_ids), collapse = ',')})") else ""
+  conn <- duckdb_conn()
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  data.table::setDT(DBI::dbGetQuery(conn, glue::glue("
+    WITH edu AS (
+      SELECT education,
+        CASE education
+          WHEN 'High School' THEN 1
+          WHEN 'Associate'   THEN 2
+          WHEN 'Bachelor'    THEN 3
+          WHEN 'Master'      THEN 4
+          WHEN 'MBA'         THEN 5
+          WHEN 'PhD'         THEN 6
+          ELSE 7
+        END AS sort_key
+      FROM employees
+      WHERE status = 'active' {dept_filter} {loc_filter}
+    )
+    SELECT education, sort_key,
+           COUNT(*) AS n,
+           ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS pct
+    FROM edu
+    GROUP BY education, sort_key
+    ORDER BY sort_key
+  ")))[]
+}
+
+#' Job level distribution
+#' @export
+query_level_distribution <- function(dept_ids = NULL, loc_ids = NULL) {
+  dept_filter <- if (!is.null(dept_ids) && !identical(dept_ids, "all") && length(dept_ids) > 0L)
+    glue::glue("AND e.dept_id IN ({paste(as.integer(dept_ids), collapse = ',')})") else ""
+  loc_filter <- if (!is.null(loc_ids) && !identical(loc_ids, "all") && length(loc_ids) > 0L)
+    glue::glue("AND e.location_id IN ({paste(as.integer(loc_ids), collapse = ',')})") else ""
+  conn <- duckdb_conn()
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  data.table::setDT(DBI::dbGetQuery(conn, glue::glue("
+    SELECT e.job_level,
+           pc.level_label,
+           COUNT(*) AS n,
+           ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS pct,
+           ROUND(SUM(e.fte), 1) AS fte_total
+    FROM employees e
+    LEFT JOIN payroll_config pc ON pc.job_level = e.job_level
+    WHERE e.status = 'active' {dept_filter} {loc_filter}
+    GROUP BY e.job_level, pc.level_label
+    ORDER BY e.job_level
+  ")))[]
+}
+
+#' Tenure distribution (years)
+#' @export
+query_tenure_distribution <- function(dept_ids = NULL, loc_ids = NULL) {
+  dept_filter <- if (!is.null(dept_ids) && !identical(dept_ids, "all") && length(dept_ids) > 0L)
+    glue::glue("AND dept_id IN ({paste(as.integer(dept_ids), collapse = ',')})") else ""
+  loc_filter <- if (!is.null(loc_ids) && !identical(loc_ids, "all") && length(loc_ids) > 0L)
+    glue::glue("AND location_id IN ({paste(as.integer(loc_ids), collapse = ',')})") else ""
+  today <- Sys.Date()
+  conn <- duckdb_conn()
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  data.table::setDT(DBI::dbGetQuery(conn, glue::glue("
+    WITH tenures AS (
+      SELECT DATE_DIFF('year', hire_date, DATE '{today}') AS tenure_yrs
+      FROM employees
+      WHERE status = 'active' {dept_filter} {loc_filter}
+    ),
+    bucketed AS (
+      SELECT
+        CASE
+          WHEN tenure_yrs < 1  THEN '< 1 yr'
+          WHEN tenure_yrs < 3  THEN '1 - 2 yrs'
+          WHEN tenure_yrs < 5  THEN '3 - 4 yrs'
+          WHEN tenure_yrs < 8  THEN '5 - 7 yrs'
+          WHEN tenure_yrs < 11 THEN '8 - 10 yrs'
+          ELSE                      '10+ yrs'
+        END AS tenure_bucket,
+        CASE
+          WHEN tenure_yrs < 1  THEN 1
+          WHEN tenure_yrs < 3  THEN 2
+          WHEN tenure_yrs < 5  THEN 3
+          WHEN tenure_yrs < 8  THEN 4
+          WHEN tenure_yrs < 11 THEN 5
+          ELSE                      6
+        END AS sort_key
+      FROM tenures
+    )
+    SELECT tenure_bucket, sort_key,
+           COUNT(*) AS n,
+           ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS pct
+    FROM bucketed
+    GROUP BY tenure_bucket, sort_key
+    ORDER BY sort_key
+  ")))[]
+}
+
+#' Absenteeism rate from attendance Parquet
+#' @export
+query_absenteeism_rate <- function(date_from = NULL, date_to = NULL,
+                                   dept_ids = NULL, loc_ids = NULL) {
+  w <- .where(date_from, date_to, dept_ids, loc_ids = loc_ids)
+  .q(glue::glue("
+    SELECT
+      dept_name,
+      dept_id,
+      ROUND(100.0 * SUM(CAST(NOT is_present AS INTEGER)) / NULLIF(COUNT(*), 0), 2)
+        AS absenteeism_rate_pct,
+      COUNT(*) AS total_scheduled,
+      SUM(CAST(NOT is_present AS INTEGER)) AS total_absent
+    FROM {.p()} {w}
+    GROUP BY dept_id, dept_name
+    ORDER BY absenteeism_rate_pct DESC
+  "))
+}
+
+#' Payslip for a single employee-month from payroll Parquet
+#' @export
+query_payslip <- function(employee_id, year, month) {
+  conn <- duckdb_conn()
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
+  data.table::setDT(DBI::dbGetQuery(conn, glue::glue("
+    SELECT p.*,
+           e.name       AS employee_name_full,
+           e.title,
+           e.employee_no,
+           e.gender,
+           e.hire_date,
+           e.education,
+           o.name       AS office_name,
+           o.city,
+           o.country,
+           d.name       AS department_name,
+           pc.level_label
+    FROM {.pp()} p
+    LEFT JOIN employees e ON e.id = p.employee_id
+    LEFT JOIN offices   o ON o.id = e.location_id
+    LEFT JOIN departments d ON d.id = p.dept_id
+    LEFT JOIN payroll_config pc ON pc.job_level = p.job_level
+    WHERE p.employee_id = {as.integer(employee_id)}
+      AND p.year  = {as.integer(year)}
+      AND p.month = {as.integer(month)}
+    LIMIT 1
+  ")))[]
+}
+
+#' Monthly payroll KPI summary (across employees)
+#' @export
+query_payroll_kpi_summary <- function(year = NULL, month = NULL, dept_ids = NULL, loc_ids = NULL) {
+  yr_filter   <- if (!is.null(year))  glue::glue("AND year = {as.integer(year)}")   else ""
+  mo_filter   <- if (!is.null(month)) glue::glue("AND month = {as.integer(month)}") else ""
+  dept_filter <- if (!is.null(dept_ids) && !identical(dept_ids, "all") && length(dept_ids) > 0L)
+    glue::glue("AND dept_id IN ({paste(as.integer(dept_ids), collapse = ',')})") else ""
+  loc_filter  <- if (!is.null(loc_ids)  && !identical(loc_ids,  "all") && length(loc_ids)  > 0L)
+    glue::glue("AND location_id IN ({paste(as.integer(loc_ids), collapse = ',')})") else ""
+  .q(glue::glue("
+    SELECT
+      COUNT(DISTINCT employee_id)      AS headcount,
+      ROUND(SUM(gross_pay), 2)         AS total_gross,
+      ROUND(SUM(net_pay), 2)           AS total_net,
+      ROUND(SUM(total_allowances), 2)  AS total_allowances,
+      ROUND(SUM(total_deductions), 2)  AS total_deductions,
+      ROUND(AVG(net_pay), 2)           AS avg_net_pay
+    FROM {.pp()}
+    WHERE 1=1 {yr_filter} {mo_filter} {dept_filter} {loc_filter}
+  "))
+}
+
+#' Payroll trend (monthly) from payroll Parquet
+#' @export
+query_payroll_cost_trend <- function(dept_ids = NULL, loc_ids = NULL,
+                                     year = NULL) {
+  yr_filter   <- if (!is.null(year)) glue::glue("AND year = {as.integer(year)}") else ""
+  dept_filter <- if (!is.null(dept_ids) && !identical(dept_ids, "all") && length(dept_ids) > 0L)
+    glue::glue("AND dept_id IN ({paste(as.integer(dept_ids), collapse = ',')})") else ""
+  loc_filter  <- if (!is.null(loc_ids)  && !identical(loc_ids,  "all") && length(loc_ids)  > 0L)
+    glue::glue("AND location_id IN ({paste(as.integer(loc_ids), collapse = ',')})") else ""
+  .q(glue::glue("
+    SELECT year, month,
+           STRFTIME(MAKE_DATE(year, month, 1), '%Y-%m') AS period,
+           ROUND(SUM(gross_pay), 2)        AS total_gross,
+           ROUND(SUM(total_allowances), 2) AS total_allowances,
+           ROUND(SUM(total_deductions), 2) AS total_deductions,
+           ROUND(SUM(net_pay), 2)          AS total_net
+    FROM {.pp()}
+    WHERE 1=1 {yr_filter} {dept_filter} {loc_filter}
+    GROUP BY year, month
+    ORDER BY year, month
   "))
 }

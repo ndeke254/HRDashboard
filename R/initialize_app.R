@@ -22,7 +22,31 @@ NULL
     fs::dir_delete(parquet_root)
   }
   fs::dir_create(dirname(duckdb_path), recurse = TRUE)
-  fs::dir_create(parquet_root, recurse = TRUE)
+  fs::dir_create(file.path(parquet_root, "attendance"), recurse = TRUE)
+  fs::dir_create(file.path(parquet_root, "payroll"),    recurse = TRUE)
+
+  # offices (8 global branches):
+  offices <- data.table::data.table(
+    id      = 1:8,
+    name    = c("New York HQ","London Office","Singapore Hub","Toronto Office",
+                "Berlin Office","Sydney Office","Nairobi Office","Dubai Office"),
+    city    = c("New York","London","Singapore","Toronto","Berlin","Sydney","Nairobi","Dubai"),
+    country = c("USA","UK","Singapore","Canada","Germany","Australia","Kenya","UAE"),
+    region  = c("Americas","EMEA","APAC","Americas","EMEA","APAC","Africa","EMEA")
+  )
+
+  # payroll config per job level:
+  payroll_config <- data.table::data.table(
+    job_level       = c("L1","L2","L3","L4","L5","L6","L7","L8"),
+    level_label     = c("Junior","Mid-Level","Senior","Lead","Manager","Director","VP","C-Suite"),
+    housing_pct     = c(0.05, 0.08, 0.10, 0.12, 0.15, 0.18, 0.20, 0.25),
+    transport_fixed = c(200,  250,  300,  350,  400,  500,  600,  800),
+    meal_fixed      = c(100,  120,  140,  160,  180,  210,  240,  280),
+    medical_fixed   = c( 80,  100,  130,  160,  200,  260,  320,  400),
+    tax_rate        = c(0.15, 0.18, 0.21, 0.24, 0.26, 0.28, 0.31, 0.33),
+    pension_pct     = c(0.04, 0.05, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10),
+    health_premium  = c(120,  145,  175,  205,  240,  290,  350,  420)
+  )
 
   # departments (8):
   departments <- data.table::data.table(
@@ -393,6 +417,47 @@ NULL
     )
   ]
 
+  # job_level derived from title:
+  employees[, job_level := data.table::fcase(
+    grepl("Chief|CEO|CTO|CFO|COO|CHRO", title, ignore.case = TRUE), "L8",
+    grepl("\\bVP\\b|Vice President",    title, ignore.case = TRUE), "L7",
+    grepl("Director",                   title, ignore.case = TRUE), "L6",
+    grepl("Manager|Controller",         title, ignore.case = TRUE), "L5",
+    grepl("Lead|Staff|Principal",       title, ignore.case = TRUE), "L4",
+    grepl("Senior|Sr\\.",               title, ignore.case = TRUE), "L3",
+    grepl("SDR|Associate PM|Support Specialist|Onboarding Specialist|Business Development Rep|Sales Representative", title, ignore.case = TRUE), "L1",
+    default = "L2"
+  )]
+
+  # birth_date: age 22-62 at time of hire
+  employees[, birth_date := as.Date(
+    as.integer(hire_date) - as.integer(round(stats::runif(n_emp, min = 22*365, max = 62*365))),
+    origin = "1970-01-01"
+  )]
+
+  # education correlated with job_level
+  edu_levels <- c("High School","Associate","Bachelor","Master","MBA","PhD")
+  edu_probs <- list(
+    L1 = c(0.35, 0.25, 0.28, 0.08, 0.03, 0.01),
+    L2 = c(0.15, 0.20, 0.42, 0.15, 0.06, 0.02),
+    L3 = c(0.05, 0.10, 0.45, 0.26, 0.10, 0.04),
+    L4 = c(0.02, 0.06, 0.38, 0.32, 0.14, 0.08),
+    L5 = c(0.01, 0.04, 0.28, 0.35, 0.22, 0.10),
+    L6 = c(0.00, 0.02, 0.22, 0.36, 0.27, 0.13),
+    L7 = c(0.00, 0.01, 0.15, 0.34, 0.32, 0.18),
+    L8 = c(0.00, 0.00, 0.10, 0.30, 0.37, 0.23)
+  )
+  employees[, education := {
+    mapply(function(lvl) sample(edu_levels, 1L, prob = edu_probs[[lvl]]), job_level)
+  }]
+
+  # fte: 85% full-time, 10% 0.75, 5% 0.5
+  employees[, fte := sample(c(1.0, 0.75, 0.5), n_emp, replace = TRUE, prob = c(0.85, 0.10, 0.05))]
+
+  # location_id: weighted toward HQ
+  employees[, location_id := sample(1:8, n_emp, replace = TRUE,
+    prob = c(0.35, 0.15, 0.12, 0.10, 0.10, 0.08, 0.05, 0.05))]
+
   # schedules:
   sched_type <- sample(
     c("full", "hybrid4", "hybrid3", "compressed"),
@@ -481,6 +546,11 @@ NULL
       exit_date
     )],
     on = "employee_id"
+  ]
+
+  # attach location_id, job_level, fte from employees to emp_ref:
+  emp_ref <- employees[, .(employee_id = id, location_id, job_level, fte)][
+    emp_ref, on = "employee_id"
   ]
 
   emp_day <- workdays_dt[rep(seq_len(n_days), times = n_emp)]
@@ -657,6 +727,11 @@ NULL
   # attach department names:
   dept_lkp <- departments[, .(dept_id = id, dept_name = name)]
   emp_day <- dept_lkp[emp_day, on = "dept_id"]
+
+  # attach office names:
+  office_lkp <- offices[, .(location_id = id, location_name = name)]
+  emp_day <- office_lkp[emp_day, on = "location_id"]
+
   data.table::setnames(
     emp_day,
     c("emp_name", "dow"),
@@ -669,6 +744,10 @@ NULL
     "employee_name",
     "dept_id",
     "dept_name",
+    "location_id",
+    "location_name",
+    "job_level",
+    "fte",
     "date",
     "year",
     "month",
@@ -691,20 +770,63 @@ NULL
   )
   fact <- emp_day[, ..final_cols]
 
-  # write Parquet warehouse:
+  # write Parquet warehouse (attendance):
   arrow::write_dataset(
-    dataset = arrow::as_arrow_table(fact),
-    path = parquet_root,
-    partitioning = c("year", "month", "day"),
-    format = "parquet",
+    dataset  = arrow::as_arrow_table(fact),
+    path     = file.path(parquet_root, "attendance"),
+    partitioning          = c("year", "month", "day"),
+    format                = "parquet",
+    existing_data_behavior = "overwrite"
+  )
+
+  # Monthly payroll aggregation:
+  monthly_agg <- fact[, .(
+    scheduled_days = .N,
+    days_present   = sum(is_present, na.rm = TRUE),
+    days_absent    = sum(!is_present, na.rm = TRUE),
+    days_late      = sum(is_late == TRUE, na.rm = TRUE),
+    total_hours    = round(sum(hours_worked, na.rm = TRUE), 2L),
+    basic_pay      = round(sum(regular_pay,  na.rm = TRUE), 2L),
+    overtime_pay   = round(sum(overtime_pay, na.rm = TRUE), 2L)
+  ), by = .(employee_id, employee_name, dept_id, dept_name,
+            location_id, location_name, job_level, fte, year, month)]
+
+  # Join payroll config:
+  monthly_agg <- payroll_config[monthly_agg, on = "job_level"]
+
+  monthly_agg[, housing_allowance   := round(basic_pay * housing_pct, 2L)]
+  monthly_agg[, transport_allowance := as.numeric(transport_fixed)]
+  monthly_agg[, meal_allowance      := as.numeric(meal_fixed)]
+  monthly_agg[, medical_allowance   := as.numeric(medical_fixed)]
+  monthly_agg[, total_allowances    := housing_allowance + transport_allowance +
+                                       meal_allowance + medical_allowance]
+  monthly_agg[, gross_pay      := round(basic_pay + overtime_pay + total_allowances, 2L)]
+  monthly_agg[, income_tax     := round((basic_pay + overtime_pay) * tax_rate, 2L)]
+  monthly_agg[, pension_deduction := round(basic_pay * pension_pct, 2L)]
+  monthly_agg[, health_deduction  := as.numeric(health_premium)]
+  monthly_agg[, total_deductions  := income_tax + pension_deduction + health_deduction]
+  monthly_agg[, net_pay        := round(gross_pay - total_deductions, 2L)]
+
+  payroll_cols <- c(
+    "employee_id","employee_name","dept_id","dept_name",
+    "location_id","location_name","job_level","fte",
+    "year","month",
+    "scheduled_days","days_present","days_absent","days_late","total_hours",
+    "basic_pay","overtime_pay",
+    "housing_allowance","transport_allowance","meal_allowance","medical_allowance","total_allowances",
+    "gross_pay","income_tax","pension_deduction","health_deduction","total_deductions","net_pay"
+  )
+
+  arrow::write_dataset(
+    dataset  = arrow::as_arrow_table(monthly_agg[, ..payroll_cols]),
+    path     = file.path(parquet_root, "payroll"),
+    partitioning          = c("year", "month"),
+    format                = "parquet",
     existing_data_behavior = "overwrite"
   )
 
   # write DuckDB reference tables:
-  .write_duckdb_tables(duckdb_path, departments, employees, schedules, holidays)
-
-  # generate live attendance for today:
-  .generate_live_attendance(duckdb_path, employees, departments)
+  .write_duckdb_tables(duckdb_path, departments, employees, schedules, holidays, offices, payroll_config)
 
   invisible(TRUE)
 }
@@ -715,7 +837,9 @@ NULL
   departments,
   employees,
   schedules,
-  holidays
+  holidays,
+  offices,
+  payroll_config
 ) {
   conn <- DBI::dbConnect(duckdb::duckdb(), dbdir = duckdb_path)
   on.exit(DBI::dbDisconnect(conn, shutdown = TRUE), add = TRUE)
@@ -729,13 +853,50 @@ NULL
   DBI::dbExecute(
     conn = conn,
     statement = "
+    CREATE TABLE offices (
+      id      INTEGER PRIMARY KEY,
+      name    VARCHAR,
+      city    VARCHAR,
+      country VARCHAR,
+      region  VARCHAR
+    )
+  "
+  )
+  DBI::dbWriteTable(conn, "offices", offices, append = TRUE)
+
+  DBI::dbExecute(
+    conn = conn,
+    statement = "
+    CREATE TABLE payroll_config (
+      job_level       VARCHAR PRIMARY KEY,
+      level_label     VARCHAR,
+      housing_pct     DOUBLE,
+      transport_fixed DOUBLE,
+      meal_fixed      DOUBLE,
+      medical_fixed   DOUBLE,
+      tax_rate        DOUBLE,
+      pension_pct     DOUBLE,
+      health_premium  DOUBLE
+    )
+  "
+  )
+  DBI::dbWriteTable(conn, "payroll_config", payroll_config, append = TRUE)
+
+  DBI::dbExecute(
+    conn = conn,
+    statement = "
     CREATE TABLE employees (
       id          BIGINT  PRIMARY KEY,
       employee_no INTEGER,
       dept_id     INTEGER REFERENCES departments(id),
+      location_id INTEGER REFERENCES offices(id),
       name        VARCHAR,
       title       VARCHAR,
       gender      VARCHAR CHECK (gender IN ('F','M')),
+      birth_date  DATE,
+      education   VARCHAR,
+      job_level   VARCHAR,
+      fte         DOUBLE NOT NULL DEFAULT 1.0,
       status      VARCHAR CHECK (status IN ('active','inactive')) DEFAULT 'active',
       hire_date   DATE,
       exit_date   DATE,
@@ -750,9 +911,14 @@ NULL
       id,
       employee_no,
       dept_id,
+      location_id,
       name,
       title,
       gender,
+      birth_date,
+      education,
+      job_level,
+      fte,
       status,
       hire_date,
       exit_date,
@@ -800,94 +966,6 @@ NULL
     append = TRUE
   )
 
-  DBI::dbExecute(
-    conn = conn,
-    statement = "
-    CREATE TABLE live_attendance (
-      employee_id        BIGINT    REFERENCES employees(id) NOT NULL,
-      check_type         VARCHAR   CHECK (check_type IN ('I','O')) NOT NULL,
-      check_time         TIMESTAMP NOT NULL,
-      check_mins         INTEGER,
-      earlier_check_time TIMESTAMP NOT NULL,
-      earlier_check_mins INTEGER,
-      diff_mins          INTEGER,
-      trend              VARCHAR
-    )
-  "
-  )
-
-  invisible(TRUE)
-}
-
-#' @keywords internal
-.generate_live_attendance <- function(duckdb_path, employees, departments) {
-  today <- Sys.Date()
-  today_posix <- as.POSIXct(as.character(today), tz = "UTC")
-
-  active_emp <- employees[status == "active"]
-  n_active <- nrow(active_emp)
-
-  # 65–80% of active employees are IN today:
-  n_in <- as.integer(round(n_active * stats::runif(1, 0.65, 0.80)))
-  in_ids <- sample(active_emp$id, n_in, replace = FALSE)
-
-  # 30–60% of those who came IN also have an OUT record:
-  n_out <- as.integer(round(n_in * stats::runif(1, 0.30, 0.60)))
-  out_ids <- sample(in_ids, n_out, replace = FALSE)
-
-  now_mins <- as.integer(difftime(Sys.time(), today_posix, units = "mins"))
-  # arrival times: between 07:30 and current time (capped at 09:30):
-  arr_upper <- min(now_mins, 570L)
-  arr_mins <- as.integer(round(stats::runif(n_in, 450L, max(451L, arr_upper))))
-
-  arr_dt <- data.table::data.table(
-    employee_id = in_ids,
-    check_type = "I",
-    check_time = today_posix + arr_mins * 60L,
-    check_mins = arr_mins,
-    earlier_check_time = today_posix +
-      pmax(0L, arr_mins - as.integer(round(stats::rnorm(n_in, 30, 10)))) * 60L,
-    earlier_check_mins = pmax(
-      0L,
-      arr_mins - as.integer(round(stats::rnorm(n_in, 30, 10)))
-    ),
-    diff_mins = as.integer(round(stats::rnorm(n_in, 0, 10))),
-    trend = sample(
-      c("up", "down", "neutral"),
-      n_in,
-      replace = TRUE,
-      prob = c(0.35, 0.35, 0.30)
-    )
-  )
-
-  dep_mins <- arr_mins[match(out_ids, in_ids)] +
-    as.integer(round(stats::runif(n_out, 420L, 540L)))
-  dep_dt <- data.table::data.table(
-    employee_id = out_ids,
-    check_type = "O",
-    check_time = today_posix + dep_mins * 60L,
-    check_mins = dep_mins,
-    earlier_check_time = today_posix +
-      pmax(0L, dep_mins - as.integer(round(stats::rnorm(n_out, 30, 10)))) * 60L,
-    earlier_check_mins = pmax(
-      0L,
-      dep_mins - as.integer(round(stats::rnorm(n_out, 30, 10)))
-    ),
-    diff_mins = as.integer(round(stats::rnorm(n_out, 0, 10))),
-    trend = sample(
-      c("up", "down", "neutral"),
-      n_out,
-      replace = TRUE,
-      prob = c(0.35, 0.35, 0.30)
-    )
-  )
-
-  live_dt <- data.table::rbindlist(list(arr_dt, dep_dt))
-
-  conn <- DBI::dbConnect(duckdb::duckdb(), dbdir = duckdb_path)
-  on.exit(DBI::dbDisconnect(conn, shutdown = TRUE), add = TRUE)
-  DBI::dbWriteTable(conn, "live_attendance", live_dt, append = TRUE)
-
   invisible(TRUE)
 }
 
@@ -910,6 +988,40 @@ NULL
     )
   }
 
+  if (!"offices" %in% tables) {
+    DBI::dbExecute(
+      conn = conn,
+      statement = "
+      CREATE TABLE offices (
+        id      INTEGER PRIMARY KEY,
+        name    VARCHAR,
+        city    VARCHAR,
+        country VARCHAR,
+        region  VARCHAR
+      );
+    "
+    )
+  }
+
+  if (!"payroll_config" %in% tables) {
+    DBI::dbExecute(
+      conn = conn,
+      statement = "
+      CREATE TABLE payroll_config (
+        job_level       VARCHAR PRIMARY KEY,
+        level_label     VARCHAR,
+        housing_pct     DOUBLE,
+        transport_fixed DOUBLE,
+        meal_fixed      DOUBLE,
+        medical_fixed   DOUBLE,
+        tax_rate        DOUBLE,
+        pension_pct     DOUBLE,
+        health_premium  DOUBLE
+      );
+    "
+    )
+  }
+
   if (!"employees" %in% tables) {
     DBI::dbExecute(
       conn = conn,
@@ -918,78 +1030,19 @@ NULL
         id          BIGINT  PRIMARY KEY,
         employee_no INTEGER,
         dept_id     INTEGER REFERENCES departments(id),
+        location_id INTEGER REFERENCES offices(id),
         name        VARCHAR,
         title       VARCHAR,
         gender      VARCHAR CHECK (gender IN ('F','M')),
+        birth_date  DATE,
+        education   VARCHAR,
+        job_level   VARCHAR,
+        fte         DOUBLE NOT NULL DEFAULT 1.0,
         status      VARCHAR CHECK (status IN ('active','inactive')) DEFAULT 'active',
         hire_date   DATE,
         exit_date   DATE,
         hourly_rate DOUBLE NOT NULL DEFAULT 0.0
       );
-    "
-    )
-  }
-
-  if (!"schedules" %in% tables) {
-    DBI::dbExecute(
-      conn = conn,
-      statement = "
-      CREATE TABLE schedules (
-        employee_id BIGINT  PRIMARY KEY REFERENCES employees(id),
-        monday      VARCHAR CHECK (monday    IN ('wfo','wfh','leave','half')),
-        tuesday     VARCHAR CHECK (tuesday   IN ('wfo','wfh','leave','half')),
-        wednesday   VARCHAR CHECK (wednesday IN ('wfo','wfh','leave','half')),
-        thursday    VARCHAR CHECK (thursday  IN ('wfo','wfh','leave','half')),
-        friday      VARCHAR CHECK (friday    IN ('wfo','wfh','leave','half'))
-      );
-    "
-    )
-  }
-
-  if (!"live_attendance" %in% tables) {
-    DBI::dbExecute(
-      conn = conn,
-      statement = "
-      CREATE TABLE live_attendance (
-        employee_id        BIGINT    REFERENCES employees(id) NOT NULL,
-        check_type         VARCHAR   CHECK (check_type IN ('I','O')) NOT NULL,
-        check_time         TIMESTAMP NOT NULL,
-        check_mins         INTEGER,
-        earlier_check_time TIMESTAMP NOT NULL,
-        earlier_check_mins INTEGER,
-        diff_mins          INTEGER,
-        trend              VARCHAR
-      );
-    "
-    )
-  }
-
-  if (!"holidays" %in% tables) {
-    DBI::dbExecute(conn = conn, statement = "CREATE SEQUENCE IF NOT EXISTS holidays_seq;")
-    DBI::dbExecute(
-      conn = conn,
-      statement = "
-      CREATE TABLE holidays (
-        id       BIGINT  DEFAULT nextval('holidays_seq'),
-        day      INTEGER,
-        month    INTEGER,
-        name     VARCHAR,
-        is_fixed BOOLEAN,
-        PRIMARY KEY (day, month)
-      );
-    "
-    )
-    DBI::dbExecute(
-      conn = conn,
-      statement = "
-      INSERT INTO holidays (month, day, name, is_fixed) VALUES
-        (1,  1,  'New Year''s Day',  TRUE),
-        (1,  15, 'MLK Day',          FALSE),
-        (6,  19, 'Juneteenth',       TRUE),
-        (7,  4,  'Independence Day', TRUE),
-        (11, 11, 'Veterans Day',     TRUE),
-        (12, 25, 'Christmas Day',    TRUE),
-        (12, 26, 'Boxing Day',       TRUE);
     "
     )
   }
@@ -1024,13 +1077,14 @@ initialize_app <- function(
     )
   )
 ) {
-  fs::dir_create(parquet_root, recurse = TRUE)
+  fs::dir_create(file.path(parquet_root, "attendance"), recurse = TRUE)
+  fs::dir_create(file.path(parquet_root, "payroll"),    recurse = TRUE)
   fs::dir_create(dirname(duckdb_path), recurse = TRUE)
 
   warehouse_is_empty <- identical(
     length(fs::dir_ls(
-      path = parquet_root,
-      type = "directory",
+      path   = file.path(parquet_root, "attendance"),
+      type   = "directory",
       regexp = "year=\\d+"
     )),
     0L

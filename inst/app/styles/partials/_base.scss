@@ -1,27 +1,7 @@
-body {
-  @include flex-center;
-  flex-direction: column;
-
-  background: $bgPage;
-  margin: 0;
-  min-height: 100vh;
-  padding-top: rem(70px);
-
-  @include mediaFrom($breakSm) {
-    padding: rem(90px) rem(24px) rem(40px);
-  }
-
-  @include mediaFrom($breakLg) {
-    padding: rem(90px) rem(40px) rem(40px);
-  }
-
-  @include mediaFrom($breakXl) {
-    padding: rem(90px) rem(40px) rem(40px);
-  }
-}
-
 html {
   box-sizing: border-box;
+  height: 100%;
+  overflow: hidden;
 }
 
 *,
@@ -34,28 +14,36 @@ html {
   outline: none;
 }
 
+body {
+  background: $bgPage;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
 .tabbable {
   width: 100%;
 }
 
-
 .dashboard {
   animation: fadeIn 0.35s ease both;
-  background-color: $white;
-  border: 1px solid $ashLight;
-  border-radius: $filletLarge;
-  box-shadow: 0 2px 12px rgba($navy, 0.06), 0 1px 3px rgba($navy, 0.04);
-  // max-width: $maxContentWidth;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
   overflow: hidden;
-  padding: rem(20px);
   width: 100%;
-  display: grid;
+}
 
-  @include mediaFrom($breakSm) {
-    padding: rem(28px);
-  }
-
-  @include mediaFrom($breakXl) {
-    padding: rem(36px);
-  }
+// ── Busy startup overlay ──────────────────────────────────────────────────────
+.busy-text {
+  color: $white;
+  font-family: $fontPrimary;
+  font-size: rem(14px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-top: rem(12px);
 }

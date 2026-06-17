@@ -3,3 +3,4 @@ dev.R
 .Rprofile
 data/
 .Renviron
+.claude/settings.local.json

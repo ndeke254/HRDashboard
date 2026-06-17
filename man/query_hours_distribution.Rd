@@ -8,13 +8,14 @@ query_hours_distribution(
   date_from = NULL,
   date_to = NULL,
   dept_ids = NULL,
-  emp_ids = NULL
+  emp_ids = NULL,
+  loc_ids = NULL
 )
 }
 \arguments{
 \item{date_from, date_to}{Date range.}
 
-\item{dept_ids, emp_ids}{Optional filter vectors.}
+\item{dept_ids, emp_ids, loc_ids}{Optional filter vectors.}
 }
 \description{
 Hours-worked distribution in 0.5-hour buckets

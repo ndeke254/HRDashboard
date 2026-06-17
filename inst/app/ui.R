@@ -82,6 +82,19 @@ ui <- bslib::page(
               maxOptions = 5,
               plugins = list("remove_button", "drag_drop")
             )
+          ),
+          selectizeInput(
+            inputId  = "locations",
+            label    = "Offices",
+            choices  = get_locations_choices(),
+            multiple = TRUE,
+            selected = "all",
+            options  = list(
+              placeholder = "Select offices...",
+              maxItems    = 3L,
+              maxOptions  = 8L,
+              plugins     = list("remove_button")
+            )
           )
         ),
         tags$div(
@@ -103,89 +116,126 @@ ui <- bslib::page(
           )
         )
       ),
-      tags$section(
-        class = "dashboard-panels",
 
-        tags$div(class = "kpi-section-heading", "KPIs Overview"),
+      tags$div(
+        class = "dashboard-body",
 
-        tags$div(
-          id = "kpi_attendance",
-          class = "panel panel-metric panel-metric-featured",
-          kpi_overviewUI("kpi_attendance")
-        ),
-        tags$div(
-          id = "kpi_pay",
-          class = "panel panel-metric",
-          kpi_overviewUI("kpi_pay")
-        ),
-        tags$div(
-          id = "kpi_hours",
-          class = "panel panel-metric",
-          kpi_overviewUI("kpi_hours")
-        ),
-        tags$div(
-          id = "kpi_ontime",
-          class = "panel panel-metric",
-          kpi_overviewUI("kpi_ontime")
-        ),
-        tags$div(
-          id = "kpi_overtime",
-          class = "panel panel-metric",
-          kpi_overviewUI("kpi_overtime")
-        ),
-        tags$div(
-          id = "kpi_score",
-          class = "panel panel-metric",
-          kpi_overviewUI("kpi_score")
+        # ── Tab navigation ──────────────────────────────────────────────────
+        tags$nav(
+          class = "dashboard-nav",
+          tags$button(class = "nav-tab nav-tab--active", `data-tab` = "attendance",
+                      tags$i(class = "fa-regular fa-calendar-check"), " Attendance"),
+          tags$button(class = "nav-tab", `data-tab` = "workforce",
+                      tags$i(class = "fa-solid fa-users"), " Workforce"),
+          tags$button(class = "nav-tab", `data-tab` = "payroll",
+                      tags$i(class = "fa-solid fa-money-bill-wave"), " Payroll")
         ),
 
-        # comparisons:
+        # ── Attendance tab (existing content) ───────────────────────────────
         tags$div(
-          id = "comparisons",
-          class = "panel panel-chart chart-breakdown",
-          comparisonUI("comparisons")
-        ),
+          id    = "tab-attendance",
+          class = "tab-panel tab-panel--active",
 
-        # trends:
-        tags$div(
-          id = "trends",
-          class = "panel panel-chart chart-time",
-          trendsUI("trends")
-        ),
+          # KPI row:
+          tags$section(
+            class = "dashboard-panels",
 
-        # distributions:
-        tags$div(
-          id = "distributions",
-          class = "panel panel-chart chart-time",
-          distributionsUI("distributions")
-        ),
+            tags$div(class = "kpi-section-heading", "KPIs Overview"),
 
-        # attendance proportions:
-        tags$div(
-          id = "attendance_proportions",
-          class = "panel panel-chart chart-breakdown",
-          attendance_proportionsUI("attendance_proportions")
-        ),
-
-        # employees schedule / live attendance:
-        tags$details(
-          id = "employees_schedule",
-          class = "panel panel-chart-wide chart-time collapsible-panel",
-          tags$summary(
-            class = "collapsible-summary",
             tags$div(
-              class = "panel-header",
-              tags$span(class = "panel-title", "Weekly Schedule"),
-              tags$span(
-                class = "collapsible-summary-note",
-                "Click to expand or collapse"
+              id = "kpi_attendance",
+              class = "panel panel-metric panel-metric-featured",
+              kpi_overviewUI("kpi_attendance")
+            ),
+            tags$div(
+              id = "kpi_pay",
+              class = "panel panel-metric",
+              kpi_overviewUI("kpi_pay")
+            ),
+            tags$div(
+              id = "kpi_hours",
+              class = "panel panel-metric",
+              kpi_overviewUI("kpi_hours")
+            ),
+            tags$div(
+              id = "kpi_ontime",
+              class = "panel panel-metric",
+              kpi_overviewUI("kpi_ontime")
+            ),
+            tags$div(
+              id = "kpi_overtime",
+              class = "panel panel-metric",
+              kpi_overviewUI("kpi_overtime")
+            ),
+            tags$div(
+              id = "kpi_score",
+              class = "panel panel-metric",
+              kpi_overviewUI("kpi_score")
+            ),
+
+            # comparisons:
+            tags$div(
+              id = "comparisons",
+              class = "panel panel-chart chart-breakdown",
+              comparisonUI("comparisons")
+            ),
+
+            # trends:
+            tags$div(
+              id = "trends",
+              class = "panel panel-chart chart-time",
+              trendsUI("trends")
+            ),
+
+            # distributions:
+            tags$div(
+              id = "distributions",
+              class = "panel panel-chart chart-time",
+              distributionsUI("distributions")
+            ),
+
+            # attendance proportions:
+            tags$div(
+              id = "attendance_proportions",
+              class = "panel panel-chart chart-breakdown",
+              attendance_proportionsUI("attendance_proportions")
+            ),
+
+            # employees schedule / live attendance:
+            tags$details(
+              id = "employees_schedule",
+              class = "panel panel-chart-wide chart-time collapsible-panel",
+              tags$summary(
+                class = "collapsible-summary",
+                tags$div(
+                  class = "panel-header",
+                  tags$span(class = "panel-title", "Weekly Schedule"),
+                  tags$span(
+                    class = "collapsible-summary-note",
+                    "Click to expand or collapse"
+                  )
+                )
+              ),
+              tags$div(
+                class = "collapsible-panel-body",
+                employees_scheduleUI("employees_schedule")
               )
             )
-          ),
-          tags$div(
-            class = "collapsible-panel-body",
-            employees_scheduleUI("employees_schedule")
           )
+        ),
+
+        # ── Workforce tab ────────────────────────────────────────────────────
+        tags$div(
+          id    = "tab-workforce",
+          class = "tab-panel",
+          workforceUI("workforce")
+        ),
+
+        # ── Payroll tab ──────────────────────────────────────────────────────
+        tags$div(
+          id    = "tab-payroll",
+          class = "tab-panel",
+          payslipUI("payslip")
         )
       )
     ),

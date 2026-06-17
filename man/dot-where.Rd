@@ -2,11 +2,17 @@
 % Please edit documentation in R/queries.R
 \name{.where}
 \alias{.where}
-\title{Build SQL WHERE clause (date range + optional dept/emp filters)}
+\title{Build SQL WHERE clause (date range + optional dept/emp/loc filters)}
 \usage{
-.where(date_from = NULL, date_to = NULL, dept_ids = NULL, emp_ids = NULL)
+.where(
+  date_from = NULL,
+  date_to = NULL,
+  dept_ids = NULL,
+  emp_ids = NULL,
+  loc_ids = NULL
+)
 }
 \description{
-Build SQL WHERE clause (date range + optional dept/emp filters)
+Build SQL WHERE clause (date range + optional dept/emp/loc filters)
 }
 \keyword{internal}

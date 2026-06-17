@@ -1,161 +1,200 @@
-.main-header {
+// ── Dark top bar: brand + all filters ────────────────────────────────────────
+.dashboard-header {
   align-items: center;
-  background: $white;
-  border-bottom: 1px solid $ashLight;
-  box-shadow: 0 1px 6px rgba($navy, 0.06);
+  background: $headerBg;
   display: flex;
-  font-size: 1rem;
-  font-weight: normal;
-  gap: rem(10px);
-  left: 0;
-  line-height: 1;
-  margin: 0;
-  padding: rem(18px) rem(24px);
-  position: fixed;
-  top: 0;
-  width: 100%;
-  z-index: 100;
-
-  // prevent the link wrapper from adding inline spacing
-  a {
-    align-items: center;
-    display: flex;
-    line-height: 0;
-  }
-
-  .logo-main {
-    height: rem(32px);
-    width: auto;
-  }
-
-  .main-title {
-    color: $gray;
-    font-size: rem(20px);
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    line-height: 1;
-    white-space: nowrap;
-    margin-top: rem(0.35rem);
-    margin-left: rem(-0.4rem);
-
-    @include mediaTo($breakMd) {
-      display: none;
-    }
-  }
+  flex-shrink: 0;
+  gap: rem(14px);
+  padding: rem(10px) rem(20px);
+  position: relative;
+  z-index: 30;
 }
 
-.header-nav {
-  margin-left: auto;
-}
-
-.user-nav {
+// ── Logo + title / version lockup ────────────────────────────────────────────
+.dashboard-brand {
   align-items: center;
   display: flex;
   flex-shrink: 0;
-  gap: rem(8px);
+  gap: rem(10px);
 
-  .user-avatar {
-    align-items: center;
-    background-color: $orange;
-    border-radius: 50%;
-    color: $white;
-    display: flex;
-    flex-shrink: 0;
-    font-size: rem(12px);
-    font-weight: 700;
-    height: rem(34px);
-    justify-content: center;
-    letter-spacing: 0.03em;
-    width: rem(34px);
-  }
-
-  .user-name {
-    color: $grayDark;
-    display: none;
-    font-size: rem(13px);
-    font-weight: 500;
-    max-width: rem(140px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    @include mediaFrom($breakMd) {
-      display: block;
-    }
-  }
-
-  .signout-btn {
-    align-items: center;
-    background: none;
-    border: 1px solid $ashLight;
-    border-radius: $filletSmall;
-    color: $gray;
-    cursor: pointer;
-    display: flex;
-    font-size: rem(13px);
-    height: rem(34px);
-    justify-content: center;
-    padding: 0 rem(10px);
-    transition: background-color $hoverTransition, color $hoverTransition, border-color $hoverTransition;
-    width: rem(34px);
-
-    &:hover {
-      background-color: #FEE2E2;
-      border-color: #FCA5A5;
-      color: #991B1B;
-    }
+  .logo-dashboard {
+    height: rem(30px);
+    width: auto;
   }
 }
 
-.dashboard-header {
-  border-bottom: 1px solid $ashLight;
+.brand-text {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  margin-bottom: rem(20px);
-  position: relative;
-  z-index: 30;
+  gap: rem(3px);
 
-  @include mediaFrom($breakMd) {
-    align-items: flex-start;
-    flex-direction: row;
-  }
-
-  @include mediaFrom($breakXl) {
-    flex-wrap: nowrap;
-  }
-
-  .dashboard-heading {
-    align-items: center;
-    background: none;
-    color: $ash;
-    display: flex;
-    flex-shrink: 0;
-    font-size: rem(20px);
-    font-weight: 500;
+  .dashboard-title {
+    color: $white;
+    font-size: rem(14px);
+    font-weight: 700;
+    letter-spacing: 0.01em;
     line-height: 1;
-    margin-bottom: rem(16px);
+    white-space: nowrap;
+  }
 
-    @include mediaFrom($breakSm) {
+  .dashboard-version {
+    color: rgba($white, 0.45);
+    font-size: rem(10px);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+}
+
+// Vertical divider between brand and controls
+.dashboard-brand::after {
+  background: rgba($white, 0.15);
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  height: rem(26px);
+  margin-left: rem(6px);
+  width: 1px;
+}
+
+// ── Filter controls row ───────────────────────────────────────────────────────
+.dashboard-controls {
+  align-items: flex-end;
+  display: flex;
+  flex: 1;
+  gap: rem(8px);
+  justify-content: flex-end;
+  min-width: 0;
+
+  // all selectize / select form-groups inside the dark header
+  .form-group {
+    @include dropdown;
+    @include dropdownFilters;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    gap: rem(3px);
+    margin-bottom: 0;
+    max-width: rem(180px);
+    min-width: rem(120px);
+
+    label {
+      color: rgba($white, 0.55);
+      font-size: rem(10px);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      line-height: 1;
       margin-bottom: 0;
+      text-transform: uppercase;
+      white-space: nowrap;
     }
 
-    @include mediaFrom($breakMd) {
-      margin-right: rem(100px);
-    }
-
-    .dashboard-version {
-      color: $grayLight;
+    // override selectize + native select inputs for dark bg
+    .selectize-input,
+    select.form-control {
+      background: rgba($white, 0.07) !important;
+      border-color: rgba($white, 0.14) !important;
+      color: $white !important;
       font-size: rem(12px);
-      font-weight: 600;
-      margin: 0 0 rem(25px) rem(10px);
+
+      &::placeholder {
+        color: rgba($white, 0.4) !important;
+      }
     }
 
-    .dashboard-title {
-      @extend .dashboard-version;
-      color: $navy;
-      font-size: rem(17px);
-      font-weight: 600;
+    // selectize item chips
+    .selectize-control.multi .item {
+      background: rgba($white, 0.14);
+      border: 1px solid rgba($white, 0.2);
+      color: $white;
     }
+
+    // selectize caret / remove icon
+    .selectize-control .selectize-input::after {
+      border-top-color: rgba($white, 0.5) !important;
+    }
+
+    &>div { width: 100%; }
+  }
+
+  // dropdowns popup stays white (readable)
+  .selectize-dropdown {
+    background: $white !important;
+    border-color: $ashLight !important;
+
+    .option { color: $grayDark; }
+    .active  { background: rgba($primary, 0.1); color: $primary; }
+  }
+}
+
+// ── Period group: Year | Month | Day (with left divider) ─────────────────────
+.period-group {
+  align-items: flex-end;
+  border-left: 1px solid rgba($white, 0.15);
+  display: flex;
+  flex-shrink: 0;
+  gap: rem(5px);
+  padding-left: rem(10px);
+
+  .form-group {
+    @include dropdown;
+    @include dropdownFilters;
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    gap: rem(3px);
+    margin-bottom: 0;
+
+    label {
+      color: rgba($white, 0.55);
+      font-size: rem(10px);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      margin-bottom: 0;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    select.form-control {
+      background: rgba($white, 0.07) !important;
+      border-color: rgba($white, 0.14) !important;
+      color: $white !important;
+      font-size: rem(12px);
+    }
+
+    &#filter_year  { width: rem(80px); }
+    &#filter_month { width: rem(74px); }
+    &#filter_day   { width: rem(64px); }
+
+    &>div { width: 100%; }
+  }
+}
+
+// ── Apply button ──────────────────────────────────────────────────────────────
+.btn-apply-filters {
+  align-self: flex-end;
+  background: $primary;
+  border: none;
+  border-radius: $filletSmall;
+  color: $white;
+  flex-shrink: 0;
+  font-family: $fontPrimary;
+  font-size: rem(12px);
+  font-weight: 600;
+  height: 34px;
+  padding: 0 rem(14px);
+  transition: background $hoverTransition, box-shadow $hoverTransition;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus {
+    background: darken($primary, 8%);
+    box-shadow: 0 4px 12px rgba($primary, 0.35);
+    color: $white;
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 }

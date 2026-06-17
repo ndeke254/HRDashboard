@@ -1,0 +1,214 @@
+// ── Payroll tab body layout ────────────────────────────────────────────────
+.kpi-row--payroll {
+  display: grid;
+  gap: rem(8px);
+  grid-template-columns: repeat(4, 1fr);
+  padding: rem(8px) rem(20px) 0;
+}
+
+.payroll-body {
+  display: grid;
+  flex: 1;
+  gap: rem(8px);
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+  overflow: hidden;
+  padding: rem(8px) rem(20px) rem(10px);
+}
+
+.payroll-trend-panel {
+  overflow: hidden;
+}
+
+// ── Payslip panel ─────────────────────────────────────────────────────────
+.payslip-panel {
+  display: flex;
+  flex-direction: column;
+  gap: rem(12px);
+  overflow-y: auto;
+  padding: rem(14px) rem(16px);
+}
+
+.payslip-controls {
+  display: flex;
+  flex-direction: column;
+  gap: rem(8px);
+}
+
+.payslip-period {
+  display: grid;
+  gap: rem(8px);
+  grid-template-columns: 1fr 1fr;
+}
+
+.payslip-actions {
+  display: flex;
+  gap: rem(8px);
+
+  .btn-download-payslip {
+    background: $teal;
+    border: none;
+    border-radius: $filletSmall;
+    color: $white;
+    font-family: $fontPrimary;
+    font-size: rem(12px);
+    font-weight: 600;
+    height: 34px;
+    padding: 0 rem(14px);
+
+    &:hover {
+      background: darken($teal, 8%);
+      color: $white;
+    }
+  }
+}
+
+// ── The rendered payslip document ─────────────────────────────────────────
+.payslip {
+  background: $white;
+  border: 1px solid $ashLight;
+  border-radius: rem(8px);
+  font-family: $fontPrimary;
+  padding: rem(20px) rem(24px);
+}
+
+.payslip-header {
+  align-items: flex-start;
+  border-bottom: 2px solid $navy;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: rem(14px);
+  padding-bottom: rem(12px);
+}
+
+.payslip-name {
+  color: $navy;
+  font-size: rem(17px);
+  font-weight: 700;
+  margin: 0 0 rem(3px);
+}
+
+.payslip-meta {
+  color: $gray;
+  font-size: rem(11px);
+  margin: rem(2px) 0;
+}
+
+.payslip-period-badge {
+  background: $orange;
+  border-radius: rem(4px);
+  color: $white;
+  display: inline-block;
+  font-size: rem(11px);
+  font-weight: 700;
+  padding: rem(3px) rem(10px);
+}
+
+.payslip-level-badge {
+  color: $teal;
+  font-size: rem(10px);
+  font-weight: 600;
+  margin: rem(4px) 0 0;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.payslip-attendance {
+  display: flex;
+  gap: rem(12px);
+  margin-bottom: rem(14px);
+}
+
+.payslip-att-item {
+  background: $bgPage;
+  border-radius: rem(6px);
+  flex: 1;
+  padding: rem(8px) rem(10px);
+  text-align: center;
+
+  .payslip-att-label {
+    color: $gray;
+    display: block;
+    font-size: rem(9px);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .payslip-att-value {
+    color: $navy;
+    display: block;
+    font-size: rem(16px);
+    font-weight: 700;
+    margin-top: rem(2px);
+  }
+}
+
+.payslip-tables {
+  display: grid;
+  gap: rem(12px);
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: rem(14px);
+}
+
+.payslip-table {
+  border-collapse: collapse;
+  width: 100%;
+
+  th {
+    background: $bgPage;
+    color: $teal;
+    font-size: rem(10px);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: rem(7px) rem(10px);
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  td {
+    border-bottom: 1px solid $ashLight;
+    color: $grayDark;
+    font-size: rem(12px);
+    padding: rem(6px) rem(10px);
+
+    &:last-child { text-align: right; }
+  }
+
+  tr.payslip-subtotal td {
+    color: $navy;
+    font-weight: 700;
+  }
+}
+
+.payslip-net {
+  align-items: center;
+  background: $navy;
+  border-radius: rem(6px);
+  color: $white;
+  display: flex;
+  justify-content: space-between;
+  padding: rem(12px) rem(16px);
+
+  .payslip-net-label {
+    font-size: rem(13px);
+    font-weight: 600;
+    opacity: 0.8;
+  }
+  .payslip-net-value {
+    font-size: rem(20px);
+    font-weight: 700;
+  }
+}
+
+.payslip-empty {
+  align-items: center;
+  color: $ash;
+  display: flex;
+  flex-direction: column;
+  gap: rem(10px);
+  justify-content: center;
+  min-height: rem(200px);
+  text-align: center;
+
+  i { font-size: rem(36px); opacity: 0.4; }
+  p { font-size: rem(13px); margin: 0; }
+}
