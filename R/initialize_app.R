@@ -246,6 +246,32 @@
     "Director",
     "Manager"
   )
+  .mid_level_titles <- c(
+    "Software Engineer",
+    "DevOps Engineer",
+    "QA Engineer",
+    "Product Analyst",
+    "UX Designer",
+    "Account Executive",
+    "Marketing Specialist",
+    "Content Strategist",
+    "SEO Analyst",
+    "Brand Designer",
+    "Growth Analyst",
+    "Financial Analyst",
+    "Accountant",
+    "FP&A Analyst",
+    "Treasury Analyst",
+    "HR Specialist",
+    "Recruiter",
+    "People Ops Specialist",
+    "Compensation Analyst",
+    "Operations Analyst",
+    "Business Analyst",
+    "Operations Coordinator",
+    "Scrum Master",
+    "Technical Support Engineer"
+  )
   .junior_titles <- c(
     "Associate PM",
     "SDR",
@@ -263,13 +289,19 @@
     ) {
       round(max(45, min(100, stats::rnorm(1, 65, 10))), 2)
     } else if (
+      any(sapply(.mid_level_titles, function(t) {
+        grepl(t, title, ignore.case = TRUE)
+      }))
+    ) {
+      round(max(30, min(65, stats::rnorm(1, 45, 8))), 2)
+    } else if (
       any(sapply(.junior_titles, function(t) {
         grepl(t, title, ignore.case = TRUE)
       }))
     ) {
       round(max(18, min(40, stats::rnorm(1, 28, 5))), 2)
     } else {
-      round(max(25, min(65, stats::rnorm(1, 40, 8))), 2)
+      round(max(25, min(55, stats::rnorm(1, 38, 7))), 2)
     }
   }
 
@@ -277,12 +309,13 @@
   employees <- data.table::rbindlist(lapply(
     seq_len(nrow(departments)),
     function(i) {
-      dept <- departments[i]
+      dept_id_val   <- departments$id[i]
+      dept_name_val <- departments$name[i]
       n <- dept_n[i]
       genders <- sample(c("M", "F"), n, replace = TRUE, prob = c(0.52, 0.48))
-      titles <- sample(titles_by_dept[[dept$name]], n, replace = TRUE)
+      titles <- sample(titles_by_dept[[dept_name_val]], n, replace = TRUE)
       data.table::data.table(
-        dept_id = dept$id,
+        dept_id = dept_id_val,
         name = vapply(
           seq_len(n),
           function(j) {
@@ -862,7 +895,7 @@
 
   tables <- DBI::dbListTables(conn = conn)
 
-  if ("departments" %!in% tables) {
+  if (!"departments" %in% tables) {
     DBI::dbExecute(
       conn = conn,
       statement = "
@@ -874,7 +907,7 @@
     )
   }
 
-  if ("employees" %!in% tables) {
+  if (!"employees" %in% tables) {
     DBI::dbExecute(
       conn = conn,
       statement = "
@@ -894,7 +927,7 @@
     )
   }
 
-  if ("schedules" %!in% tables) {
+  if (!"schedules" %in% tables) {
     DBI::dbExecute(
       conn = conn,
       statement = "
@@ -910,7 +943,7 @@
     )
   }
 
-  if ("live_attendance" %!in% tables) {
+  if (!"live_attendance" %in% tables) {
     DBI::dbExecute(
       conn = conn,
       statement = "
@@ -928,7 +961,7 @@
     )
   }
 
-  if ("holidays" %!in% tables) {
+  if (!"holidays" %in% tables) {
     DBI::dbExecute(conn = conn, statement = "CREATE SEQUENCE IF NOT EXISTS holidays_seq;")
     DBI::dbExecute(
       conn = conn,
