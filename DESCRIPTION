@@ -1,0 +1,20 @@
+Package: HRDashboard
+Title: HR Analytics Dashboard
+Version: 1.0.0
+Authors@R:
+        person("Jefferson", "Ndeke", email = "musumbijefferson@gmail.com", role = c("aut", "cre"))
+Description: Analytics and Shiny modules for attendance dashboard
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Suggests:
+    testthat (>= 3.0.0),
+    knitr
+    rmarkdown
+Config/testthat/edition: 3
+Imports:
+    data.table (>= 1.18.2.1),
+    httr2
+Config/roxygen2/version: 8.0.0
+RoxygenNote: 7.3.3

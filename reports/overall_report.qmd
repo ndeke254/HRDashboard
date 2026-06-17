@@ -1,0 +1,495 @@
+---
+title: "Attendance Report"
+subtitle: "`r params$report_type_label`"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+author: "Actserv Analytics"
+
+params:
+  report_type:  "weekly_flash"
+  date_from:    ""
+  date_to:      ""
+  dept_scope:   "All departments"
+  data_json:    "[]"
+
+format:
+  pdf:
+    documentclass: article
+    geometry:
+      - top=20mm
+      - left=20mm
+      - right=20mm
+      - bottom=20mm
+    fontsize: 10pt
+    colorlinks: true
+    linkcolor: "f89734"
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{array}
+        \usepackage{xcolor}
+        \usepackage{colortbl}
+        \usepackage{fancyhdr}
+        \usepackage{graphicx}
+        \usepackage{float}
+        \usepackage{caption}
+        \definecolor{navy}{HTML}{244a4a}
+        \definecolor{brandblue}{HTML}{f89734}
+        \definecolor{present}{HTML}{007A63}
+        \definecolor{late}{HTML}{C47D00}
+        \definecolor{absent}{HTML}{C0303A}
+        \definecolor{lightgray}{HTML}{EEF3F7}
+        \definecolor{bordergray}{HTML}{E0E5E9}
+        \pagestyle{fancy}
+        \fancyhf{}
+        \renewcommand{\headrulewidth}{0.4pt}
+        \fancyhead[L]{\textcolor{navy}{\textbf{Actserv} Attendance Analytics}}
+        \fancyhead[R]{\textcolor{gray}{\small CONFIDENTIAL}}
+        \fancyfoot[L]{\textcolor{gray}{\small \leftmark}}
+        \fancyfoot[R]{\textcolor{gray}{\small Page \thepage}}
+
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(data.table)
+library(knitr)
+library(kableExtra)
+library(lubridate)
+library(ggplot2)
+
+# ── Load data from JSON param ─────────────────────────────────────────────────
+df <- tryCatch(
+  data.table::setDT(jsonlite::fromJSON(params$data_json)),
+  error = function(e) data.table()
+)
+
+# ── Report type label ─────────────────────────────────────────────────────────
+type_labels <- list(
+  weekly_flash = "Weekly Attendance Flash",
+  monthly_performance = "Monthly Performance Report",
+  dept_summary = "Department Summary",
+  employee_detail = "Employee Attendance Detail",
+  late_log = "Late Arrivals Log",
+  absent_log = "Absent Days Log"
+)
+report_label <- type_labels[[params$report_type]] %||% params$report_type
+
+# date range labels:
+date_from_fmt <- if (nchar(params$date_from) > 0) {
+  format(as.Date(params$date_from), "%d %b %Y")
+} else {
+  "—"
+}
+date_to_fmt <- if (nchar(params$date_to) > 0) {
+  format(as.Date(params$date_to), "%d %b %Y")
+} else {
+  "—"
+}
+
+# helpers:
+`%||%` <- function(a, b) if (!is.null(a) && length(a) > 0) a else b
+
+pct <- function(x) paste0(round(x, 1), "%")
+hrs <- function(x) paste0(round(x, 1), "h")
+
+color_pct <- function(x, low = 70, mid = 85) {
+  dplyr::case_when(
+    x < low ~ "\\textcolor{absent}{",
+    x < mid ~ "\\textcolor{late}{",
+    TRUE ~ "\\textcolor{present}{"
+  )
+}
+```
+
+\begin{center}
+{\color{navy}\rule{\linewidth}{2pt}}
+\vspace{4pt}
+{\color{navy}\Large\textbf{`r report_label`}}\\[4pt]
+{\color{gray}\normalsize `r date_from_fmt` — `r date_to_fmt`}\\[2pt]
+{\color{gray}\small Scope: `r params$dept_scope`}
+\vspace{4pt}
+{\color{navy}\rule{\linewidth}{0.5pt}}
+\end{center}
+
+\vspace{6pt}
+
+```{r report-dispatch}
+#| results: asis
+
+# Route to the appropriate section based on report_type
+report_type <- params$report_type
+```
+
+```{r kpi-summary}
+#| results: asis
+
+# KPI summary banner — shown for all report types except detail logs
+if (
+  report_type %in%
+    c("weekly_flash", "monthly_performance", "dept_summary", "employee_detail")
+) {
+  if (nrow(df) > 0 && "on_schedule" %in% names(df)) {
+    adherence <- round(mean(df$on_schedule, na.rm = TRUE) * 100, 1)
+    avg_hours <- round(mean(df$hours_in_office, na.rm = TRUE), 1)
+    late_count <- if ("status" %in% names(df)) {
+      sum(df$status == "late", na.rm = TRUE)
+    } else {
+      0L
+    }
+    absent_ct <- if ("status" %in% names(df)) {
+      sum(df$status == "absent", na.rm = TRUE)
+    } else {
+      0L
+    }
+    employees <- if ("userid" %in% names(df)) {
+      data.table::uniqueN(df$userid)
+    } else {
+      0L
+    }
+
+    cat(sprintf(
+      "
+\\vspace{4pt}
+\\noindent
+\\begin{tabular}{|p{3cm}|p{3cm}|p{3cm}|p{3cm}|p{3cm}|}
+\\hline
+\\rowcolor{lightgray}
+\\textbf{\\small Employees} & \\textbf{\\small Adherence} & \\textbf{\\small Avg Hrs/Day} & \\textbf{\\small Late Arrivals} & \\textbf{\\small Absent Days} \\\\
+\\hline
+\\centering\\large\\textbf{%d} & \\centering\\large\\textbf{%s} & \\centering\\large\\textbf{%s} & \\centering\\large\\textbf{%d} & \\centering\\large\\textbf{%d} \\\\
+\\hline
+\\end{tabular}
+\\vspace{8pt}
+",
+      employees,
+      pct(adherence),
+      hrs(avg_hours),
+      late_count,
+      absent_ct
+    ))
+  }
+}
+```
+
+---
+
+```{r section-weekly-flash}
+#| results: asis
+
+if (report_type == "weekly_flash") {
+  cat("## Weekly Attendance Summary\n\n")
+
+  if (nrow(df) == 0) {
+    cat("*No data available for the selected period.*\n")
+  } else {
+    # Daily summary
+    if ("date" %in% names(df) && "status" %in% names(df)) {
+      df[, date := as.Date(date)]
+
+      daily_summary <- df[,
+        .(
+          present = sum(status == "present", na.rm = TRUE),
+          late = sum(status == "late", na.rm = TRUE),
+          absent = sum(status == "absent", na.rm = TRUE),
+          wfh = sum(status == "wfh", na.rm = TRUE),
+          half_day = sum(status == "half_day", na.rm = TRUE),
+          adherence = round(mean(on_schedule, na.rm = TRUE) * 100, 1)
+        ),
+        by = date
+      ][order(date)]
+
+      daily_summary[, date := format(date, "%a %d %b")]
+
+      kbl(
+        daily_summary,
+        col.names = c(
+          "Date",
+          "Present",
+          "Late",
+          "Absent",
+          "WFH",
+          "Half Day",
+          "Adherence %"
+        ),
+        booktabs = TRUE,
+        longtable = TRUE,
+        align = "lcccccc"
+      ) |>
+        kable_styling(
+          latex_options = c("hold_position", "repeat_header"),
+          font_size = 9
+        ) |>
+        column_spec(
+          7,
+          color = ifelse(
+            daily_summary$adherence < 70,
+            "C0303A",
+            ifelse(daily_summary$adherence < 85, "C47D00", "007A63")
+          )
+        ) |>
+        print()
+    }
+
+    # Top 5 late arrivals
+    if ("status" %in% names(df)) {
+      late_df <- df[status == "late"][order(-minutes_late)][1:min(5, .N)]
+      if (nrow(late_df) > 0) {
+        cat("\n\n### Top Late Arrivals This Week\n\n")
+        late_display <- late_df[, .(
+          Employee = employee_name,
+          Department = department,
+          Date = format(as.Date(date), "%a %d %b"),
+          Arrived = arrival_time,
+          `Mins Late` = minutes_late
+        )]
+        kbl(late_display, booktabs = TRUE, align = "llccc") |>
+          kable_styling(latex_options = "hold_position", font_size = 9) |>
+          print()
+      }
+    }
+  }
+}
+```
+
+```{r section-monthly}
+#| results: asis
+
+if (report_type == "monthly_performance") {
+  cat("## Monthly Performance Report\n\n")
+
+  if (nrow(df) == 0) {
+    cat("*No data available for the selected period.*\n")
+  } else {
+    # Department summary
+    if ("department" %in% names(df)) {
+      cat("### Department Overview\n\n")
+
+      dept_tbl <- df[,
+        .(
+          Staff = data.table::uniqueN(userid),
+          `Adh %` = round(mean(on_schedule, na.rm = TRUE) * 100, 1),
+          `Avg Hrs` = round(mean(hours_in_office, na.rm = TRUE), 1),
+          Late = sum(status == "late", na.rm = TRUE),
+          Absent = sum(status == "absent", na.rm = TRUE)
+        ),
+        by = .(Department = department)
+      ][order(-`Adh %`)]
+
+      kbl(dept_tbl, booktabs = TRUE, align = "lccccc") |>
+        kable_styling(latex_options = "hold_position", font_size = 9) |>
+        column_spec(
+          3,
+          color = ifelse(
+            dept_tbl$`Adh %` < 70,
+            "C0303A",
+            ifelse(dept_tbl$`Adh %` < 85, "C47D00", "007A63")
+          )
+        ) |>
+        print()
+    }
+
+    # Monthly trend
+    if ("date" %in% names(df)) {
+      df[, week := isoweek(as.Date(date))]
+      weekly <- df[,
+        .(
+          adherence = round(mean(on_schedule, na.rm = TRUE) * 100, 1),
+          late = sum(status == "late", na.rm = TRUE),
+          absent = sum(status == "absent", na.rm = TRUE)
+        ),
+        by = week
+      ][order(week)]
+
+      cat("\n\n### Weekly Trend\n\n")
+      kbl(
+        weekly,
+        col.names = c("Week", "Adherence %", "Late Count", "Absent Count"),
+        booktabs = TRUE,
+        align = "cccc"
+      ) |>
+        kable_styling(latex_options = "hold_position", font_size = 9) |>
+        print()
+    }
+  }
+}
+```
+
+```{r section-dept-summary}
+#| results: asis
+
+if (report_type == "dept_summary") {
+  cat("## Department Summary\n\n")
+
+  if (nrow(df) == 0) {
+    cat("*No data available for the selected period.*\n")
+  } else {
+    display_cols <- intersect(
+      c(
+        "department",
+        "headcount",
+        "schedule_adherence",
+        "avg_hours_in_office",
+        "late_arrivals",
+        "absent_days",
+        "wfh_days",
+        "attendance_rate"
+      ),
+      names(df)
+    )
+    tbl <- df[, ..display_cols][order(-schedule_adherence)]
+    setnames(
+      tbl,
+      display_cols,
+      c(
+        "Department",
+        "Staff",
+        "Adherence %",
+        "Avg Hrs",
+        "Late",
+        "Absent",
+        "WFH",
+        "Attend %"
+      )[seq_along(display_cols)]
+    )
+    kbl(tbl, booktabs = TRUE, longtable = TRUE, align = "lcccccc") |>
+      kable_styling(
+        latex_options = c("hold_position", "repeat_header"),
+        font_size = 9
+      ) |>
+      print()
+  }
+}
+```
+
+```{r section-employee-detail}
+#| results: asis
+
+if (report_type == "employee_detail") {
+  cat("## Employee Attendance Detail\n\n")
+
+  if (nrow(df) == 0) {
+    cat("*No data available for the selected period.*\n")
+  } else {
+    display_cols <- intersect(
+      c(
+        "employee_name",
+        "department",
+        "days_worked",
+        "schedule_adherence",
+        "avg_arrival_time",
+        "avg_leaving_time",
+        "avg_hours_in_office",
+        "late_count",
+        "absent_days"
+      ),
+      names(df)
+    )
+    tbl <- df[, ..display_cols][order(department, -schedule_adherence)]
+    setnames(
+      tbl,
+      display_cols,
+      c(
+        "Employee",
+        "Department",
+        "Days",
+        "Adh %",
+        "Arrival",
+        "Leaving",
+        "Avg Hrs",
+        "Late",
+        "Absent"
+      )[seq_along(display_cols)]
+    )
+    kbl(tbl, booktabs = TRUE, longtable = TRUE, align = "llcccccc") |>
+      kable_styling(
+        latex_options = c("hold_position", "repeat_header", "striped"),
+        font_size = 8.5
+      ) |>
+      print()
+  }
+}
+```
+
+```{r section-late-log}
+#| results: asis
+
+if (report_type == "late_log") {
+  cat("## Late Arrivals Log\n\n")
+  cat(sprintf("*Total late arrivals: %d*\n\n", nrow(df)))
+
+  if (nrow(df) == 0) {
+    cat("*No late arrivals in the selected period.*\n")
+  } else {
+    display_cols <- intersect(
+      c("employee_name", "department", "date", "arrival_time", "minutes_late"),
+      names(df)
+    )
+    tbl <- df[, ..display_cols][order(date, -minutes_late)]
+    tbl[, date := format(as.Date(date), "%a %d %b %Y")]
+    setnames(
+      tbl,
+      display_cols,
+      c("Employee", "Department", "Date", "Arrived", "Mins Late")[seq_along(
+        display_cols
+      )]
+    )
+    kbl(tbl, booktabs = TRUE, longtable = TRUE, align = "llccc") |>
+      kable_styling(
+        latex_options = c("hold_position", "repeat_header", "striped"),
+        font_size = 9
+      ) |>
+      column_spec(
+        5,
+        bold = TRUE,
+        color = ifelse(tbl$`Mins Late` > 30, "C0303A", "C47D00")
+      ) |>
+      print()
+  }
+}
+```
+
+```{r section-absent-log}
+#| results: asis
+
+if (report_type == "absent_log") {
+  cat("## Absent Days Log\n\n")
+  cat(sprintf("*Total absent records: %d*\n\n", nrow(df)))
+
+  if (nrow(df) == 0) {
+    cat("*No absences in the selected period.*\n")
+  } else {
+    display_cols <- intersect(
+      c("employee_name", "department", "date"),
+      names(df)
+    )
+    tbl <- df[, ..display_cols][order(department, date)]
+    tbl[, date := format(as.Date(date), "%a %d %b %Y")]
+    setnames(
+      tbl,
+      display_cols,
+      c("Employee", "Department", "Date")[seq_along(display_cols)]
+    )
+    kbl(tbl, booktabs = TRUE, longtable = TRUE, align = "llc") |>
+      kable_styling(
+        latex_options = c("hold_position", "repeat_header", "striped"),
+        font_size = 9
+      ) |>
+      print()
+  }
+}
+```
+
+---
+
+\vspace{6pt}
+\begin{center}
+{\color{gray}\footnotesize
+Generated by Actserv Attendance Analytics \textbf{v`r app_version`} $\cdot$
+`r format(Sys.time(), "%d %b %Y %H:%M")` $\cdot$
+Data sourced from BioTime via Parquet data lake
+}
+\end{center}
