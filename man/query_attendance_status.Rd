@@ -9,7 +9,8 @@ query_attendance_status(
   date_from = NULL,
   date_to = NULL,
   emp_ids = NULL,
-  dept_ids = NULL
+  dept_ids = NULL,
+  loc_ids = NULL
 )
 }
 \arguments{
@@ -17,7 +18,7 @@ query_attendance_status(
 
 \item{date_from, date_to}{Date range.}
 
-\item{dept_ids, emp_ids}{Optional filter vectors.}
+\item{dept_ids, emp_ids, loc_ids}{Optional filter vectors.}
 }
 \description{
 Defaults to the current Monday-anchored week when no filters supplied.

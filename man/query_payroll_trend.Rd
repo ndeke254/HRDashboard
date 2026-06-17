@@ -9,6 +9,7 @@ query_payroll_trend(
   date_to = NULL,
   dept_ids = NULL,
   emp_ids = NULL,
+  loc_ids = NULL,
   by = NULL,
   grain = "week"
 )
@@ -16,7 +17,7 @@ query_payroll_trend(
 \arguments{
 \item{date_from, date_to}{Date range.}
 
-\item{dept_ids, emp_ids}{Optional filter vectors.}
+\item{dept_ids, emp_ids, loc_ids}{Optional filter vectors.}
 
 \item{by}{Optional grouping: \code{"department"} or \code{"employee"}.}
 

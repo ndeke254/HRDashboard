@@ -1,62 +1,92 @@
-.dashboard-panels {
+// ── Dashboard body (below the dark header) ────────────────────────────────────
+.dashboard-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// ── KPI row ────────────────────────────────────────────────────────────────────
+.kpi-row {
   display: grid;
-  gap: rem(16px);
-  grid-template-columns: 1fr;
-  margin-top: rem(16px);
-  position: relative;
-  width: 100%;
-  z-index: 1;
+  flex-shrink: 0;
+  gap: rem(8px);
+  grid-template-columns: repeat(6, 1fr);
+  padding: rem(12px) rem(20px) rem(8px);
 
-  @include mediaFrom($breakSm) {
-    grid-template-columns: repeat(6, 1fr);
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  @include mediaFrom($breakLg) {
-    gap: rem(20px);
-    grid-template-columns: repeat(12, 1fr);
-  }
-
-  @include mediaFrom($breakXl) {
-    gap: rem(24px);
+  @media (max-width: 576px) {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-.kpi-section-heading {
-  grid-column: 1 / -1;
-  color: $navy;
-  font-size: rem(11px);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding-bottom: rem(2px);
-  border-bottom: 1px solid $ashLight;
-  margin-bottom: rem(-4px);
+// ── Charts grid ────────────────────────────────────────────────────────────────
+.charts-grid {
+  display: grid;
+  flex: 1;
+  gap: rem(8px);
+  grid-template-columns: repeat(12, 1fr);
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 rem(20px) rem(10px);
+
+  // Row 1: trends (7) | attendance_proportions (5)
+  // Row 2: comparisons (6) | distributions (6)
+  // Row 3: employees_schedule (12)
+  > #trends                 { grid-column: span 7; }
+  > #attendance_proportions { grid-column: span 5; }
+  > #comparisons            { grid-column: span 6; }
+  > #distributions          { grid-column: span 6; }
+  > #employees_schedule     { grid-column: span 12; }
+
+  @media (max-width: 1080px) {
+    grid-template-columns: repeat(2, 1fr);
+
+    > #trends,
+    > #attendance_proportions,
+    > #comparisons,
+    > #distributions      { grid-column: span 1; }
+
+    > #employees_schedule { grid-column: span 2; }
+  }
+
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+
+    > * { grid-column: span 1; }
+  }
 }
 
+// ── Base panel ────────────────────────────────────────────────────────────────
 .panel {
   animation: fadeIn 0.4s ease both;
   background-color: $white;
   border: 1px solid $ashLight;
   border-radius: $filletSmall;
-  box-shadow: 0 1px 4px rgba($navy, 0.04);
+  box-shadow: 0 1px 4px rgba($headerBg, 0.06);
   overflow: hidden;
   transition: box-shadow $hoverTransition, transform $hoverTransition;
   width: 100%;
 
   &:hover {
-    box-shadow: 0 6px 20px rgba($navy, 0.10);
-    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba($headerBg, 0.10);
+    transform: translateY(-1px);
   }
 }
 
-// stagger each panel in the grid
+// stagger panel entrance animations
 @for $i from 1 through 12 {
-  .dashboard-panels .panel:nth-child(#{$i}) {
-    animation-delay: #{($i - 1) * 0.05}s;
+  .kpi-row .panel:nth-child(#{$i}),
+  .charts-grid .panel:nth-child(#{$i}) {
+    animation-delay: #{($i - 1) * 0.04}s;
   }
 }
 
-// shimmer overlay on recalculating Shiny outputs
+// shimmer on recalculating outputs
 .shiny-html-output.recalculating,
 .shiny-plot-output.recalculating {
   position: relative;
@@ -64,12 +94,14 @@
 
   &::after {
     animation: shimmer 1.4s linear infinite;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        rgba($white, 0.55) 40%,
-        rgba($white, 0.8) 50%,
-        rgba($white, 0.55) 60%,
-        transparent 100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba($white, 0.55) 40%,
+      rgba($white, 0.8) 50%,
+      rgba($white, 0.55) 60%,
+      transparent 100%
+    );
     background-size: 600px 100%;
     border-radius: inherit;
     content: "";
@@ -79,90 +111,67 @@
   }
 }
 
+// ── KPI / metric card ─────────────────────────────────────────────────────────
 .panel-metric {
   position: relative;
 
-  @include mediaFrom($breakSm) {
-    grid-column: span 2;
-  }
-
-  @include mediaFrom($breakSm) {
-    grid-column: span 2;
-  }
-
-  @include mediaFrom($breakLg) {
-    gap: rem(20px);
-    grid-column: span 2;
-  }
-
-  // orange accent cap — mirrors auth-card top stripe
   .kpi-cap {
-    background: linear-gradient(90deg, $orange 0%, mix($orange, $yellow, 40%) 100%);
+    background: linear-gradient(90deg, $secondary 0%, $accent 100%);
     height: 4px;
   }
 
   .kpi-body {
-    padding: rem(12px) rem(14px) rem(10px);
+    padding: rem(10px) rem(12px) rem(8px);
   }
 
-  // title row: small-caps label left, muted icon right
   .kpi-card-header {
     align-items: center;
     display: flex;
     gap: rem(8px);
     justify-content: space-between;
-    margin-bottom: rem(10px);
+    margin-bottom: rem(8px);
   }
 
   .kpi-card-description {
     color: $grayLight;
-    font-size: rem(12px);
+    font-size: rem(11px);
     line-height: 1.45;
-    margin-bottom: rem(10px);
+    margin-bottom: rem(8px);
   }
 
   .kpi-card-title {
     color: $grayDark;
-    font-size: rem(11px);
+    font-size: rem(10px);
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
     line-height: 1;
     text-transform: uppercase;
   }
 
-  // multi-choice dropdown stays compact inside the header row
   .panel-header {
     @include dropdown;
     @include dropdownPanels;
     flex: 1;
     margin-bottom: 0;
 
-    label {
-      @include visuallyHidden;
-    }
+    label { @include visuallyHidden; }
 
-    .shiny-input-container {
-      width: 100%;
-    }
+    .shiny-input-container { width: 100%; }
   }
 
-  .shiny-html-output {
-    padding: 0;
-  }
+  .shiny-html-output { padding: 0; }
 
-  // big value — always navy; quality lives in the progress bar only
   .metric {
-    color: $navy;
-    font-size: rem(26px);
-    font-weight: 500;
+    color: $headerBg;
+    font-size: rem(24px);
+    font-weight: 600;
   }
 
-  // quality-coloured progress bar (shown for % metrics)
   .metric-progress {
     background: $ashLight;
     border-radius: rem(3px);
     height: rem(4px);
-    margin: rem(24px) 0 rem(4px);
+    margin: rem(20px) 0 rem(4px);
     overflow: hidden;
     width: 100%;
   }
@@ -172,96 +181,125 @@
     border-radius: rem(3px);
     height: 100%;
 
-    &.metric-good {
-      background: #167070;
-    }
-
-    &.metric-moderate {
-      background: #FB9334;
-    }
-
-    &.metric-bad {
-      background: #c0303a;
-    }
+    &.metric-good     { background: $green; }
+    &.metric-moderate { background: $amber; }
+    &.metric-bad      { background: $rose; }
   }
 
-  // thin rule for non-% metrics (clock, hours, mins)
   .kpi-divider {
     background: $ashLight;
     height: 1px;
-    margin: rem(9px) 0 rem(5px);
+    margin: rem(8px) 0 rem(4px);
     width: 100%;
   }
 
-  .metric-change {
-    padding-top: rem(2px);
-  }
+  .metric-change { padding-top: rem(2px); }
 
   .change-badge {
     border-radius: rem(20px);
     display: inline-block;
-    font-size: rem(11px);
+    font-size: rem(10px);
     font-weight: 600;
-    padding: rem(2px) rem(8px);
+    padding: rem(2px) rem(7px);
 
-    &.positive-change {
-      background: rgba(22, 112, 112, 0.12);
-      color: #167070;
-    }
-
-    &.negative-change {
-      background: rgba(192, 48, 58, 0.10);
-      color: #c0303a;
-    }
-
-    &.zero-change {
-      background: $ashLight;
-      color: $grayLight;
-    }
-
-    &.no-data {
-      color: $ash;
-    }
+    &.positive-change { background: rgba(45, 168, 74, 0.12);  color: $green; }
+    &.negative-change { background: rgba(220, 38, 38, 0.10);  color: $rose; }
+    &.zero-change     { background: $ashLight;                 color: $grayLight; }
+    &.no-data         { color: $ash; }
   }
 
-  // sub-metric rows — border-top replaces the old <hr>
   .sub-metrics-container {
     border-top: 1px solid $ashLight;
-    margin-top: rem(8px);
-    padding: rem(8px) 0 rem(2px);
+    margin-top: rem(6px);
+    padding: rem(6px) 0 rem(2px);
   }
 
   .sub-metric-row {
     align-items: center;
     display: flex;
     justify-content: space-between;
-    padding: rem(3px) 0;
+    padding: rem(2px) 0;
   }
 
   .sub-metric-label {
     color: $grayLight;
-    font-size: rem(12px);
+    font-size: rem(11px);
   }
 
   .sub-metric-value {
     color: $grayDark;
-    font-size: rem(12px);
+    font-size: rem(11px);
     font-weight: 600;
 
-    &.metric-good {
-      color: #167070;
-    }
-
-    &.metric-moderate {
-      color: #FB9334;
-    }
-
-    &.metric-bad {
-      color: #c0303a;
-    }
+    &.metric-good     { color: $green; }
+    &.metric-moderate { color: $amber; }
+    &.metric-bad      { color: $rose; }
   }
 }
 
+// ── Featured KPI card (first in row) ─────────────────────────────────────────
+.panel-metric-featured {
+  border-color: rgba($primary, 0.3);
+  box-shadow: 0 2px 12px rgba($primary, 0.12);
+
+  .kpi-cap {
+    background: linear-gradient(90deg, $headerBg 0%, $primary 100%);
+    height: 5px;
+  }
+
+  .kpi-card-title {
+    color: $headerBg;
+    font-size: rem(10px);
+  }
+
+  .metric { font-size: rem(28px); }
+
+  .metric-icon-wrap {
+    color: $primary;
+    opacity: 0.65;
+  }
+}
+
+// ── Chart panels ──────────────────────────────────────────────────────────────
+.panel-chart {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+
+  .panel-header {
+    @include dropdown;
+    @include dropdownPanels;
+    position: absolute;
+    width: 100%;
+
+    label { @include visuallyHidden; }
+
+    .shiny-input-container { width: 100%; }
+  }
+
+  .breakdown-header { @include chart-header; }
+}
+
+.panel-chart-wide {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+
+  .panel-header {
+    @include dropdown;
+    @include dropdownPanels;
+    position: absolute;
+    width: 100%;
+
+    label { @include visuallyHidden; }
+
+    .shiny-input-container { width: 100%; }
+  }
+
+  .breakdown-header { @include chart-header; }
+}
+
+// ── Collapsible panel (employees schedule) ────────────────────────────────────
 .collapsible-panel {
   padding: 0;
 
@@ -269,14 +307,12 @@
     cursor: pointer;
     list-style: none;
 
-    &::-webkit-details-marker {
-      display: none;
-    }
+    &::-webkit-details-marker { display: none; }
   }
 
   .collapsible-summary {
     border-bottom: 1px solid $ashLight;
-    padding: rem(12px) rem(14px);
+    padding: rem(10px) rem(14px);
   }
 
   .collapsible-summary .panel-header {
@@ -289,8 +325,8 @@
   }
 
   .panel-title {
-    color: $navy;
-    font-size: rem(12px);
+    color: $headerBg;
+    font-size: rem(11px);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -298,115 +334,20 @@
 
   .collapsible-summary-note {
     color: $grayLight;
-    font-size: rem(11px);
+    font-size: rem(10px);
     font-weight: 500;
   }
 
   .collapsible-panel-body {
-    padding: rem(10px) 0 0;
-  }
-
-  &[open] .collapsible-summary-note {
-    color: $grayLight;
+    padding: rem(8px) 0 0;
   }
 }
 
-// featured card — overall KPI, always first in the grid
-.panel-metric-featured {
-  border-color: mix($navy, $ashLight, 25%);
-  box-shadow: 0 2px 12px rgba($navy, 0.10);
-
-  .kpi-cap {
-    background: linear-gradient(90deg, $navy 0%, $primary 100%);
-    height: 5px;
-  }
-
-  .kpi-card-title {
-    color: $navy;
-    font-size: rem(11px);
-  }
-
-  .metric {
-    font-size: rem(30px);
-  }
-
-  .metric-icon-wrap {
-    color: $navy;
-    opacity: 0.5;
-  }
-}
-
-.panel-chart {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-
-  @include mediaFrom($breakSm) {
-    grid-column: span 3;
-  }
-
-  @include mediaFrom($breakLg) {
-    grid-column: span 6;
-  }
-
-  .panel-header {
-    @include dropdown;
-    @include dropdownPanels;
-    position: absolute;
-    width: 100%;
-
-    label {
-      @include visuallyHidden;
-    }
-
-    .shiny-input-container {
-      width: 100%;
-    }
-  }
-
-  .breakdown-header {
-    @include chart-header;
-  }
-}
-
-.panel-chart-wide {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-
-  @include mediaFrom($breakSm) {
-    grid-column: span 6;
-  }
-
-  @include mediaFrom($breakLg) {
-    grid-column: span 12;
-  }
-
-  .panel-header {
-    @include dropdown;
-    @include dropdownPanels;
-    position: absolute;
-    width: 100%;
-
-    label {
-      @include visuallyHidden;
-    }
-
-    .shiny-input-container {
-      width: 100%;
-    }
-  }
-
-  .breakdown-header {
-    @include chart-header;
-  }
-}
-
+// ── Metric card inner wrapper ─────────────────────────────────────────────────
 .metric-card {
   background: transparent;
   border: none;
   box-shadow: none;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -420,7 +361,7 @@
   color: $grayLight;
   display: inline-flex;
   flex-shrink: 0;
-  font-size: rem(18px);
+  font-size: rem(16px);
   justify-content: center;
   line-height: 1;
   opacity: 0.7;
