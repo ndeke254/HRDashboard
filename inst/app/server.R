@@ -11,16 +11,18 @@ server <- function(input, output, session) {
     )
   })
 
-  # Current filters (date range only):
+  # Current filters (date range + locations):
   current_filters <- eventReactive(
     input$apply_filters,
     {
       dr <- input$date_range
       list(
-        departments = input$departments,
-        employees   = input$employees,
-        date_from   = if (!is.null(dr)) dr[[1L]] else as.Date(paste0(format(Sys.Date(), "%Y"), "-01-01")),
-        date_to     = if (!is.null(dr)) dr[[2L]] else Sys.Date()
+        departments  = input$departments,
+        employees    = input$employees,
+        locations    = input$locations,
+        date_from    = if (!is.null(dr)) dr[[1L]] else as.Date(paste0(format(Sys.Date(), "%Y"), "-01-01")),
+        date_to      = if (!is.null(dr)) dr[[2L]] else Sys.Date(),
+        compare_with = input$compare_with %||% "none"
       )
     },
     ignoreNULL = FALSE
@@ -39,4 +41,6 @@ server <- function(input, output, session) {
   distributionsServer("distributions", filters = current_filters)
   comparisonServer("comparisons", filters = current_filters, shared_metric = shared_chart_metric)
   trendsServer("trends", filters = current_filters, shared_metric = shared_chart_metric)
+  workforceServer("workforce", filters = current_filters)
+  payslipServer("payslip",    filters = current_filters)
 }

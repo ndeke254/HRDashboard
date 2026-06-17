@@ -1,0 +1,55 @@
+// ── Dashboard body wrapper ─────────────────────────────────────────────────
+.dashboard-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// ── Dashboard tab navigation ───────────────────────────────────────────────
+.dashboard-nav {
+  align-items: center;
+  background: $navy;
+  border-bottom: 1px solid rgba($white, 0.10);
+  display: flex;
+  flex-shrink: 0;
+  gap: 0;
+  padding: 0 rem(20px);
+  z-index: 25;
+}
+
+.nav-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: rgba($white, 0.55);
+  cursor: pointer;
+  font-family: $fontPrimary;
+  font-size: rem(11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin-bottom: -1px;
+  padding: rem(10px) rem(16px);
+  text-transform: uppercase;
+  transition: color 0.18s ease, border-color 0.18s ease;
+
+  i { margin-right: rem(5px); }
+
+  &:hover   { color: rgba($white, 0.85); }
+  &.nav-tab--active {
+    border-bottom-color: $orange;
+    color: $white;
+  }
+}
+
+// ── Tab panel visibility ───────────────────────────────────────────────────
+.tab-panel {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+
+  &.tab-panel--active { display: flex; }
+}

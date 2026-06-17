@@ -119,3 +119,21 @@ function remove_loading_spinner(btn_id, inner_html) {
 Shiny.addCustomMessageHandler("remove_loading_spinner", (msg) => {
   remove_loading_spinner(msg.btn_id, msg.inner_html);
 });
+
+// ── Tab navigation ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.nav-tab');
+    if (!btn) return;
+    document.querySelectorAll('.nav-tab').forEach(function (b) {
+      b.classList.remove('nav-tab--active');
+    });
+    btn.classList.add('nav-tab--active');
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab-panel').forEach(function (p) {
+      p.classList.remove('tab-panel--active');
+    });
+    const panel = document.getElementById('tab-' + target);
+    if (panel) panel.classList.add('tab-panel--active');
+  });
+});

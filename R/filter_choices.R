@@ -8,7 +8,7 @@
   )
 ) {
   glue::glue(
-    "read_parquet('{parquet_root}/**/*.parquet', hive_partitioning = true)"
+    "read_parquet('{parquet_root}/attendance/**/*.parquet', hive_partitioning = true)"
   )
 }
 
@@ -73,4 +73,41 @@ get_employees_choices <- function(dept_id = "all") {
   }
 
   choices_list
+}
+
+#' Get year choices for selectize inputs
+#'
+#' @return Named character vector suitable for \code{selectInput}.
+#' @export
+get_years_choices <- function() {
+  tryCatch({
+    yrs <- DBI::dbGetQuery(
+      conn      = duckdb_conn(),
+      statement = glue::glue(
+        "SELECT DISTINCT year FROM {.parquet()} ORDER BY year DESC"
+      )
+    )
+    as.character(yrs$year)
+  }, error = function(e) {
+    as.character(format(Sys.Date(), "%Y"))
+  })
+}
+
+#' Get office/location choices for selectize inputs
+#' @return Named character vector suitable for \code{selectInput}.
+#' @export
+get_locations_choices <- function() {
+  tryCatch({
+    locs <- DBI::dbGetQuery(
+      conn      = duckdb_conn(),
+      statement = "SELECT id, name, city, country FROM offices ORDER BY name"
+    )
+    c(
+      "All Locations" = "all",
+      setNames(as.character(locs$id),
+               paste0(locs$name, " (", locs$country, ")"))
+    )
+  }, error = function(e) {
+    c("All Locations" = "all")
+  })
 }

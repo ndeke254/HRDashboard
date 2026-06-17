@@ -16,6 +16,10 @@ colors <- list(
   primary = "#167070",
   teal = "#167070",
   navy = "#003D59",
+  accent = "#94B6B4",
+  secondary = "#465B57",
+  muted = "#6C8A88",
+  gold = "#AF955B",
   chart_text = "#5a6875",
   chart_text_light = "#8d9aa3",
   chart_ramp = c("#167070", "#125f5f", "#0e4d4d", "#0a3b3b", "#062929"),
@@ -85,6 +89,30 @@ metrics_list <- list(
   ),
   kpi_score = list(
     kpi_score = list(id = "kpi_score", label = "KPI Score", suffix = "%")
+  ),
+  kpi_headcount = list(
+    active_employees = list(id = "active_employees", label = "Active Employees", suffix = "")
+  ),
+  kpi_fte = list(
+    total_fte = list(id = "total_fte", label = "Total FTE", suffix = "")
+  ),
+  kpi_avg_tenure = list(
+    avg_tenure_yrs = list(id = "avg_tenure_yrs", label = "Avg Tenure", suffix = " yrs")
+  ),
+  kpi_retention = list(
+    retention_rate_pct = list(id = "retention_rate_pct", label = "Retention Rate", suffix = "%")
+  ),
+  kpi_total_gross = list(
+    total_gross = list(id = "total_gross", label = "Total Gross Pay", suffix = "")
+  ),
+  kpi_total_net = list(
+    total_net = list(id = "total_net", label = "Net Pay", suffix = "")
+  ),
+  kpi_total_allowances = list(
+    total_allowances = list(id = "total_allowances", label = "Allowances", suffix = "")
+  ),
+  kpi_total_deductions = list(
+    total_deductions = list(id = "total_deductions", label = "Deductions", suffix = "")
   ),
   comparisons = list(
     total_gross_pay    = list(id = "total_gross_pay",    label = "Gross Pay",       suffix = ""),
